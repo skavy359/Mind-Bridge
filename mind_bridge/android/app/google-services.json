@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "72644318064",
+    "project_id": "mind-bridge-cf5ee",
+    "storage_bucket": "mind-bridge-cf5ee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72644318064:android:0d2f743b6084fb9c2a35b5",
+        "android_client_info": {
+          "package_name": "com.example.mind_bridge"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "72644318064-uigt7adu87k3chnuttm5rceb18vatav4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvvJNwfF4UyPdz3Cd6pOZ__4nRpexsWCg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "72644318064-uigt7adu87k3chnuttm5rceb18vatav4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

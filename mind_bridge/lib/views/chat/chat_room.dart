@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 
@@ -13,7 +12,7 @@ class ChatRoom extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Roronoa Zoro',
+          'Gautam Sir Flutter',
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontSize: 18,
@@ -23,10 +22,7 @@ class ChatRoom extends StatelessWidget {
         backgroundColor: AppColors.mainColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios,
-            color: Colors.white,
-          ),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -35,13 +31,9 @@ class ChatRoom extends StatelessWidget {
           InkWell(
             onTap: () {},
             child: Container(
-              margin: const EdgeInsets.only(
-                right: 15,
-              ),
+              margin: const EdgeInsets.only(right: 15),
               child: const CircleAvatar(
-                backgroundImage: AssetImage(
-                  'assets/images/zoro.png',
-                ),
+                backgroundImage: AssetImage('assets/images/zoro.png'),
               ),
             ),
           ),
@@ -65,19 +57,14 @@ class ChatRoom extends StatelessWidget {
                   width: screenWidth(190),
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: AppColors.textColor2,
-                        width: 1,
-                      ),
+                      side: BorderSide(color: AppColors.textColor2, width: 1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
                     onPressed: () {},
                     child: Container(
-                      padding: EdgeInsets.only(
-                        left: screenWidth(13.2),
-                      ),
+                      padding: EdgeInsets.only(left: screenWidth(13.2)),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
@@ -113,10 +100,7 @@ class ChatRoom extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {},
-                    child: Icon(
-                      Icons.send,
-                      color: AppColors.white,
-                    ),
+                    child: Icon(Icons.send, color: AppColors.white),
                   ),
                 ),
               ],

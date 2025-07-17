@@ -17,22 +17,22 @@ import '/extentions/buildcontext/loc.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(OverlaySupport(
-    child: MaterialApp(
-      supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+  runApp(
+    OverlaySupport(
+      child: MaterialApp(
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        debugShowCheckedModeBanner: false,
+        title: 'Flutter Demo',
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: BlocProvider<AuthBloc>(
+          create: (context) => AuthBloc(FirebaseAuthProvider()),
+          child: const HomePage(),
+        ),
+        onGenerateRoute: onGenerateRoutes,
       ),
-      home: BlocProvider<AuthBloc>(
-        create: (context) => AuthBloc(FirebaseAuthProvider()),
-        child: const HomePage(),
-      ),
-      onGenerateRoute: onGenerateRoutes,
     ),
-  ));
+  );
 }
 
 class HomePage extends StatelessWidget {
@@ -66,9 +66,7 @@ class HomePage extends StatelessWidget {
         } else if (state is AuthStateLoggedInWithGmail) {
           return const NewNotesView();
         } else {
-          return const Scaffold(
-            body: CircularProgressIndicator(),
-          );
+          return const Scaffold(body: CircularProgressIndicator());
         }
       },
     );

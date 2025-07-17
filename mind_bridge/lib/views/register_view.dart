@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 import '/extentions/buildcontext/loc.dart';
@@ -59,10 +58,7 @@ class _RegisterViewState extends State<RegisterView> {
               context.loc.register_error_invalid_email,
             );
           } else if (state.exception is GenericAuthException) {
-            await showErrorDialog(
-              context,
-              context.loc.register_error_generic,
-            );
+            await showErrorDialog(context, context.loc.register_error_generic);
           }
         }
       },
@@ -78,9 +74,7 @@ class _RegisterViewState extends State<RegisterView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      height: screenHeight(42),
-                    ),
+                    SizedBox(height: screenHeight(42)),
                     Text(
                       "Register",
                       style: GoogleFonts.poppins(
@@ -89,9 +83,7 @@ class _RegisterViewState extends State<RegisterView> {
                         color: AppColors.mainColor,
                       ),
                     ),
-                    SizedBox(
-                      height: screenHeight(6.94),
-                    ),
+                    SizedBox(height: screenHeight(6.94)),
                     Text(
                       "To get in touch with your college",
                       style: GoogleFonts.poppins(
@@ -100,9 +92,7 @@ class _RegisterViewState extends State<RegisterView> {
                         color: AppColors.textColor1,
                       ),
                     ),
-                    SizedBox(
-                      height: screenHeight(14),
-                    ),
+                    SizedBox(height: screenHeight(14)),
                     Padding(
                       padding: EdgeInsets.only(
                         top: screenHeight(14),
@@ -119,9 +109,7 @@ class _RegisterViewState extends State<RegisterView> {
                               color: AppColors.textColor,
                             ),
                           ),
-                          SizedBox(
-                            height: screenHeight(10.41),
-                          ),
+                          SizedBox(height: screenHeight(10.41)),
                           SizedBox(
                             height: screenHeight(50),
                             child: TextField(
@@ -142,9 +130,7 @@ class _RegisterViewState extends State<RegisterView> {
                               ),
                             ),
                           ),
-                          SizedBox(
-                            height: screenHeight(27.8),
-                          ),
+                          SizedBox(height: screenHeight(27.8)),
                           Text(
                             "Password",
                             style: GoogleFonts.poppins(
@@ -153,9 +139,7 @@ class _RegisterViewState extends State<RegisterView> {
                               color: Colors.black,
                             ),
                           ),
-                          SizedBox(
-                            height: screenHeight(10.41),
-                          ),
+                          SizedBox(height: screenHeight(10.41)),
                           SizedBox(
                             height: screenHeight(50),
                             child: TextField(
@@ -172,9 +156,11 @@ class _RegisterViewState extends State<RegisterView> {
                                       _obscureText = !_obscureText;
                                     });
                                   },
-                                  child: Icon(_obscureText
-                                      ? Iconsax.eye
-                                      : Iconsax.eye_slash),
+                                  child: Icon(
+                                    _obscureText
+                                        ? Iconsax.eye
+                                        : Iconsax.eye_slash,
+                                  ),
                                 ),
                                 hintText: '***********',
                                 border: OutlineInputBorder(
@@ -186,9 +172,7 @@ class _RegisterViewState extends State<RegisterView> {
                               obscureText: _obscureText,
                             ),
                           ),
-                          SizedBox(
-                            height: screenHeight(42),
-                          ),
+                          SizedBox(height: screenHeight(42)),
                           SizedBox(
                             width: screenWidth(328.7),
                             height: screenHeight(34.7),
@@ -203,20 +187,15 @@ class _RegisterViewState extends State<RegisterView> {
                                 final email = _email.text;
                                 final password = _password.text;
                                 context.read<AuthBloc>().add(
-                                      AuthEventRegister(
-                                        email,
-                                        password,
-                                      ),
-                                    );
+                                  AuthEventRegister(email, password),
+                                );
                               },
                               child: SizedBox(
                                 child: Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    SizedBox(
-                                      width: screenWidth(9.86),
-                                    ),
+                                    SizedBox(width: screenWidth(9.86)),
                                     Text(
                                       "Register",
                                       style: GoogleFonts.poppins(
@@ -234,9 +213,7 @@ class _RegisterViewState extends State<RegisterView> {
                               ),
                             ),
                           ),
-                          SizedBox(
-                            height: screenHeight(27.76),
-                          ),
+                          SizedBox(height: screenHeight(27.76)),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -251,8 +228,8 @@ class _RegisterViewState extends State<RegisterView> {
                               TextButton(
                                 onPressed: () {
                                   context.read<AuthBloc>().add(
-                                        const AuthEventLogOut(),
-                                      );
+                                    const AuthEventLogOut(),
+                                  );
                                 },
                                 child: Text(
                                   style: GoogleFonts.poppins(
@@ -267,7 +244,7 @@ class _RegisterViewState extends State<RegisterView> {
                           ),
                         ],
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),

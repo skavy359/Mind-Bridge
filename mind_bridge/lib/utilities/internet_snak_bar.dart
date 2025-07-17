@@ -2,20 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:overlay_support/overlay_support.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 
 class InternetSnackBar {
   static void showTopSnackBar(BuildContext context) {
-    // cusotom bottom snackbar
     showOverlayNotification((context) {
       return Card(
-        margin: const EdgeInsets.only(
-          left: 0,
-          right: 0,
-          bottom: 0,
-        ),
+        margin: const EdgeInsets.only(left: 0, right: 0, bottom: 0),
         child: Container(
           padding: EdgeInsets.only(
             top: screenHeight(4),
@@ -37,7 +31,6 @@ class InternetSnackBar {
               // add image
               trailing: InkWell(
                 onTap: () {
-                  // close the snackbar
                   OverlaySupportEntry.of(context)?.dismiss();
                 },
                 child: Image(

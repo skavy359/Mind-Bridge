@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:velocity_x/velocity_x.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 import '/widget/download.dart';
@@ -43,9 +42,7 @@ class _SearchViewState extends State<SearchView> {
         backgroundColor: AppColors.backgroundColor1,
         body: Column(
           children: [
-            SizedBox(
-              height: screenHeight(42),
-            ),
+            SizedBox(height: screenHeight(42)),
             Padding(
               padding: EdgeInsets.only(
                 left: screenWidth(20),
@@ -78,15 +75,11 @@ class _SearchViewState extends State<SearchView> {
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide(
-                              color: AppColors.textColor2,
-                            ),
+                            borderSide: BorderSide(color: AppColors.textColor2),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide(
-                              color: AppColors.textColor2,
-                            ),
+                            borderSide: BorderSide(color: AppColors.textColor2),
                           ),
                         ),
                       ),
@@ -106,9 +99,7 @@ class _SearchViewState extends State<SearchView> {
                 ],
               ),
             ),
-            SizedBox(
-              height: screenHeight(20),
-            ),
+            SizedBox(height: screenHeight(20)),
             Expanded(
               child: ListView.builder(
                 controller: ScrollController(),
@@ -120,9 +111,7 @@ class _SearchViewState extends State<SearchView> {
                     children: [
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: Colors.transparent,
-                          ),
+                          side: const BorderSide(color: Colors.transparent),
                         ),
                         onPressed: () {
                           widget.onTap(note);
@@ -132,9 +121,7 @@ class _SearchViewState extends State<SearchView> {
                         },
                         child: Container(
                           height: listConatinerHeight,
-                          margin: EdgeInsets.only(
-                            bottom: screenWidth(13.2),
-                          ),
+                          margin: EdgeInsets.only(bottom: screenWidth(13.2)),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
@@ -156,16 +143,12 @@ class _SearchViewState extends State<SearchView> {
                                   ),
                                 ),
                               ),
-                              SizedBox(
-                                width: screenWidth(16),
-                              ),
+                              SizedBox(width: screenWidth(16)),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    SizedBox(
-                                      height: screenHeight(6),
-                                    ),
+                                    SizedBox(height: screenHeight(6)),
                                     Text(
                                       searchResult[index]['text'],
                                       maxLines: 1,
@@ -177,9 +160,7 @@ class _SearchViewState extends State<SearchView> {
                                         color: AppColors.textColor,
                                       ),
                                     ),
-                                    SizedBox(
-                                      height: screenHeight(6),
-                                    ),
+                                    SizedBox(height: screenHeight(6)),
                                     Text(
                                       "By: Nex-kun",
                                       style: GoogleFonts.poppins(
@@ -198,9 +179,7 @@ class _SearchViewState extends State<SearchView> {
                                             color: AppColors.textColor2,
                                           ),
                                         ),
-                                        SizedBox(
-                                          width: screenWidth(7),
-                                        ),
+                                        SizedBox(width: screenWidth(7)),
                                         IconButton(
                                           onPressed: () {
                                             showDialog(
@@ -228,7 +207,7 @@ class _SearchViewState extends State<SearchView> {
                   );
                 },
               ),
-            )
+            ),
           ],
         ),
       ),

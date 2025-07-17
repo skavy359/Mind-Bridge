@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 import '/constants/routes.dart';
 
 class ChatView extends StatelessWidget {
-  const ChatView({
-    super.key,
-  });
+  const ChatView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +34,7 @@ class ChatView extends StatelessWidget {
                       right: screenWidth(15),
                     ),
                     height: screenHeight(50),
-                    margin: EdgeInsets.only(
-                      bottom: screenWidth(13.2),
-                    ),
+                    margin: EdgeInsets.only(bottom: screenWidth(13.2)),
                     child: Row(
                       children: [
                         Container(
@@ -47,9 +42,7 @@ class ChatView extends StatelessWidget {
                           height: screenWidth(40),
                           decoration: BoxDecoration(
                             image: const DecorationImage(
-                              image: AssetImage(
-                                'assets/images/zoro.png',
-                              ),
+                              image: AssetImage('assets/images/zoro.png'),
                             ),
                             borderRadius: BorderRadius.only(
                               topLeft: Radius.circular(screenWidth(22)),
@@ -58,16 +51,12 @@ class ChatView extends StatelessWidget {
                             ),
                           ),
                         ),
-                        SizedBox(
-                          width: screenWidth(16),
-                        ),
+                        SizedBox(width: screenWidth(16)),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(
-                                height: screenHeight(6),
-                              ),
+                              SizedBox(height: screenHeight(6)),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -90,9 +79,7 @@ class ChatView extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              SizedBox(
-                                height: screenHeight(3),
-                              ),
+                              SizedBox(height: screenHeight(3)),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,

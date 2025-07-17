@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
 import 'package:google_fonts/google_fonts.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 import '/widget/popup.dart';

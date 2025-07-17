@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
-
 import '/views/chat/chat_room.dart';
 import '/views/home/search_view.dart';
 import '/views/notes/create_update_note_view.dart';

@@ -2,7 +2,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 import '/constants/routes.dart';
@@ -24,7 +23,6 @@ class _NewNotesViewState extends State<NewNotesView> {
     SizeConfig().init(context);
     return SafeArea(
       child: Scaffold(
-        // floatoing action button
         floatingActionButton: FloatingActionButton(
           backgroundColor: AppColors.mainColor,
           shape: RoundedRectangleBorder(
@@ -40,13 +38,9 @@ class _NewNotesViewState extends State<NewNotesView> {
               Navigator.pushNamed(context, createOrUpdateNoteRoute);
             }
           },
-          child: Icon(
-            Icons.add,
-            size: screenWidth(20),
-          ),
+          child: Icon(Icons.add, size: screenWidth(20)),
         ),
         backgroundColor: AppColors.backgroundColor1,
-        // backgroundColor: Colors.black,
         body: SingleChildScrollView(
           physics: const NeverScrollableScrollPhysics(),
           child: Column(
@@ -59,14 +53,12 @@ class _NewNotesViewState extends State<NewNotesView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      height: screenHeight(17),
-                    ),
+                    SizedBox(height: screenHeight(17)),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Hi, Nex",
+                          "Hi, Kavy",
                           style: GoogleFonts.poppins(
                             fontSize: screenWidth(20.88),
                             fontWeight: FontWeight.w600,
@@ -74,14 +66,12 @@ class _NewNotesViewState extends State<NewNotesView> {
                           ),
                         ),
                         // added temprory a logout button
-                        SizedBox(
-                          width: screenWidth(32.9),
-                        ),
+                        SizedBox(width: screenWidth(32.9)),
                         IconButton(
                           onPressed: () {
                             context.read<AuthBloc>().add(
-                                  const AuthEventLogOut(),
-                                );
+                              const AuthEventLogOut(),
+                            );
                           },
                           icon: Icon(
                             Icons.logout_outlined,
@@ -105,9 +95,7 @@ class _NewNotesViewState extends State<NewNotesView> {
                         ),
                       ],
                     ),
-                    SizedBox(
-                      height: screenHeight(20.88),
-                    ),
+                    SizedBox(height: screenHeight(20.88)),
                     SizedBox(
                       height: screenWidth(34.7),
                       child: OutlinedButton(
@@ -124,19 +112,12 @@ class _NewNotesViewState extends State<NewNotesView> {
                           Navigator.pushNamed(context, searchRoute);
                         },
                         child: Container(
-                          padding: EdgeInsets.only(
-                            left: screenWidth(13.2),
-                          ),
+                          padding: EdgeInsets.only(left: screenWidth(13.2)),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.search,
-                                color: AppColors.textColor1,
-                              ),
-                              SizedBox(
-                                width: screenWidth(9.2),
-                              ),
+                              Icon(Icons.search, color: AppColors.textColor1),
+                              SizedBox(width: screenWidth(9.2)),
                               Text(
                                 "Search notes",
                                 style: GoogleFonts.poppins(
@@ -153,9 +134,7 @@ class _NewNotesViewState extends State<NewNotesView> {
                   ],
                 ),
               ),
-              SizedBox(
-                height: screenHeight(20.88),
-              ),
+              SizedBox(height: screenHeight(20.88)),
               const NotesSlider(),
             ],
           ),

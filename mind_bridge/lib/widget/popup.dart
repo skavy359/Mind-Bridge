@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 
@@ -52,7 +51,7 @@ class Popup extends StatelessWidget {
                       ),
                     ),
                   ),
-                )
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -79,7 +78,7 @@ class Popup extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: actions!,
                   )
-                : const SizedBox()
+                : const SizedBox(),
           ],
         ),
       ),

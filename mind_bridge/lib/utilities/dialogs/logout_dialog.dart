@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-
 import '/extentions/buildcontext/loc.dart';
 import '/utilities/dialogs/generic_dialog.dart';
 

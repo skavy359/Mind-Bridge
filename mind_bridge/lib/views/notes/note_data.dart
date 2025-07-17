@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 import '/constants/routes.dart';
@@ -34,10 +33,7 @@ class _NoteDataState extends State<NoteData> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(
-        left: screenWidth(2),
-        right: screenWidth(2),
-      ),
+      padding: EdgeInsets.only(left: screenWidth(2), right: screenWidth(2)),
       child: StreamBuilder(
         stream: _notesService.allNotes(ownerUserId: userId),
         builder: (context, snapshot) {
@@ -52,19 +48,16 @@ class _NoteDataState extends State<NoteData> {
                     await _notesService.deleteNote(documentId: note.documentId);
                   },
                   onTap: (note) {
-                    Navigator.of(context).pushNamed(
-                      createOrUpdateNoteRoute,
-                      arguments: note,
-                    );
+                    Navigator.of(
+                      context,
+                    ).pushNamed(createOrUpdateNoteRoute, arguments: note);
                   },
                   onLongPress: (note) {
                     _openDeleteNotePopup(note);
                   },
                 );
               } else {
-                return const SizedBox(
-                  height: 24,
-                );
+                return const SizedBox(height: 24);
               }
             default:
               return const CircularProgressIndicator();
@@ -102,10 +95,7 @@ class _NoteDataState extends State<NoteData> {
                 Navigator.pop(context);
               },
               style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  width: 1,
-                  color: AppColors.mainColor,
-                ),
+                side: BorderSide(width: 1, color: AppColors.mainColor),
               ),
               child: Text(
                 'Cancel',
@@ -114,7 +104,7 @@ class _NoteDataState extends State<NoteData> {
                   color: AppColors.mainColor,
                 ),
               ),
-            )
+            ),
           ],
         );
       },
@@ -122,15 +112,18 @@ class _NoteDataState extends State<NoteData> {
   }
 
   deleteNote(CloudNote note) async {
-    await _notesService.deleteNote(documentId: note.documentId).then((value) {
-      if (!mounted) return;
-      Navigator.pop(context);
-      _noteDeleteSuccess();
-    }).onError((error, stackTrace) {
-      if (!mounted) return;
-      Navigator.pop(context);
-      _noteDeleteFailed();
-    });
+    await _notesService
+        .deleteNote(documentId: note.documentId)
+        .then((value) {
+          if (!mounted) return;
+          Navigator.pop(context);
+          _noteDeleteSuccess();
+        })
+        .onError((error, stackTrace) {
+          if (!mounted) return;
+          Navigator.pop(context);
+          _noteDeleteFailed();
+        });
   }
 
   _noteDeleteSuccess() {
@@ -196,7 +189,7 @@ class _NoteDataState extends State<NoteData> {
       builder: (context) {
         return Popup(
           title: 'Sorry',
-          description: 'This feature is commming soon!)',
+          description: 'This feature is coming soon!)',
           imagePath: 'assets/icon/success.png',
           actions: [
             ElevatedButton(

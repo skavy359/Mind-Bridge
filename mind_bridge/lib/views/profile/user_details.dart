@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 import '/utilities/edit_image.dart';
@@ -61,10 +60,7 @@ class _UserDetailsState extends State<UserDetails> {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: Icon(
-              Icons.arrow_back_ios,
-              color: AppColors.mainColor,
-            ),
+            icon: Icon(Icons.arrow_back_ios, color: AppColors.mainColor),
           ),
         ),
         body: Column(
@@ -87,17 +83,12 @@ class _UserDetailsState extends State<UserDetails> {
                     onPressed: () {
                       selectImage();
                     },
-                    icon: Icon(
-                      Icons.add_a_photo,
-                      color: AppColors.mainColor,
-                    ),
+                    icon: Icon(Icons.add_a_photo, color: AppColors.mainColor),
                   ),
-                )
+                ),
               ],
             ),
-            const SizedBox(
-              height: 15,
-            ),
+            const SizedBox(height: 15),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
@@ -109,9 +100,7 @@ class _UserDetailsState extends State<UserDetails> {
                 ),
               ),
             ),
-            const SizedBox(
-              height: 15,
-            ),
+            const SizedBox(height: 15),
             SizedBox(
               height: screenHeight(50),
               child: TextField(
@@ -120,9 +109,7 @@ class _UserDetailsState extends State<UserDetails> {
                 autocorrect: false,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  hintStyle: GoogleFonts.poppins(
-                    color: AppColors.textColor2,
-                  ),
+                  hintStyle: GoogleFonts.poppins(color: AppColors.textColor2),
                   hintText: 'Enter your name',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(
@@ -132,9 +119,7 @@ class _UserDetailsState extends State<UserDetails> {
                 ),
               ),
             ),
-            const SizedBox(
-              height: 15,
-            ),
+            const SizedBox(height: 15),
             SizedBox(
               height: screenHeight(50),
               child: TextField(
@@ -143,9 +128,7 @@ class _UserDetailsState extends State<UserDetails> {
                 autocorrect: false,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  hintStyle: GoogleFonts.poppins(
-                    color: AppColors.textColor2,
-                  ),
+                  hintStyle: GoogleFonts.poppins(color: AppColors.textColor2),
                   hintText: 'Enter your college name',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(
@@ -155,9 +138,7 @@ class _UserDetailsState extends State<UserDetails> {
                 ),
               ),
             ),
-            const SizedBox(
-              height: 15,
-            ),
+            const SizedBox(height: 15),
             SizedBox(
               height: screenHeight(50),
               child: TextField(
@@ -166,9 +147,7 @@ class _UserDetailsState extends State<UserDetails> {
                 autocorrect: false,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  hintStyle: GoogleFonts.poppins(
-                    color: AppColors.textColor2,
-                  ),
+                  hintStyle: GoogleFonts.poppins(color: AppColors.textColor2),
                   hintText: 'Enter your branch',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(
@@ -178,9 +157,7 @@ class _UserDetailsState extends State<UserDetails> {
                 ),
               ),
             ),
-            const SizedBox(
-              height: 15,
-            ),
+            const SizedBox(height: 15),
             ElevatedButton(
               onPressed: () {
                 addUserDetails(

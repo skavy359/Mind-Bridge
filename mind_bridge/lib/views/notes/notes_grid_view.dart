@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '/constants/colors.dart';
 
 class NotesGridView extends StatefulWidget {
@@ -13,29 +12,28 @@ class _NotesGridViewState extends State<NotesGridView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: AppColors.backgroundColor1,
-        appBar: AppBar(
-          title: const Text('Notes'),
-        ),
-        body: Container(
-          padding: const EdgeInsets.all(20),
-          child: Stack(
-            children: [
-              GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.0,
-                  crossAxisSpacing: 30.0,
-                  mainAxisSpacing: 30.0,
-                ),
-                itemCount: 10,
-                itemBuilder: (context, index) {
-                  return Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.all(Radius.circular(20)),
-                    ),
-                    child: Stack(children: [
+      backgroundColor: AppColors.backgroundColor1,
+      appBar: AppBar(title: const Text('Notes')),
+      body: Container(
+        padding: const EdgeInsets.all(20),
+        child: Stack(
+          children: [
+            GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 1.0,
+                crossAxisSpacing: 30.0,
+                mainAxisSpacing: 30.0,
+              ),
+              itemCount: 10,
+              itemBuilder: (context, index) {
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.all(Radius.circular(20)),
+                  ),
+                  child: Stack(
+                    children: [
                       Image.asset(
                         // add alignment
                         "assets/images/avatar.png",
@@ -70,12 +68,14 @@ class _NotesGridViewState extends State<NotesGridView> {
                           ],
                         ),
                       ),
-                    ]),
-                  );
-                },
-              ),
-            ],
-          ),
-        ));
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 import '/services/cloud/cloud_note.dart';
@@ -74,9 +73,7 @@ class _NotesListViewState extends State<NotesListView> {
                     children: [
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: Colors.transparent,
-                          ),
+                          side: const BorderSide(color: Colors.transparent),
                         ),
                         onPressed: () {
                           widget.onTap(note);
@@ -86,9 +83,7 @@ class _NotesListViewState extends State<NotesListView> {
                         },
                         child: Container(
                           height: listConatinerHeight,
-                          margin: EdgeInsets.only(
-                            bottom: screenWidth(13.2),
-                          ),
+                          margin: EdgeInsets.only(bottom: screenWidth(13.2)),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
@@ -110,16 +105,12 @@ class _NotesListViewState extends State<NotesListView> {
                                   ),
                                 ),
                               ),
-                              SizedBox(
-                                width: screenWidth(16),
-                              ),
+                              SizedBox(width: screenWidth(16)),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    SizedBox(
-                                      height: screenHeight(5),
-                                    ),
+                                    SizedBox(height: screenHeight(5)),
                                     Text(
                                       note.text,
                                       maxLines: 1,

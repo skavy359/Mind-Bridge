@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 import '/extentions/buildcontext/loc.dart';
@@ -54,14 +53,9 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         backgroundColor: Colors.white,
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios,
-              color: Colors.white,
-            ),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
             onPressed: () {
-              context.read<AuthBloc>().add(
-                    const AuthEventLogOut(),
-                  );
+              context.read<AuthBloc>().add(const AuthEventLogOut());
             },
           ),
           centerTitle: true,
@@ -88,12 +82,11 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                 children: [
                   Image(
                     height: screenHeight(170),
-                    image:
-                        const AssetImage('assets/images/forgot_password.png'),
+                    image: const AssetImage(
+                      'assets/images/forgot_password.png',
+                    ),
                   ),
-                  SizedBox(
-                    height: screenHeight(13.88),
-                  ),
+                  SizedBox(height: screenHeight(13.88)),
                   Text(
                     "Forgot\nPassword?",
                     style: GoogleFonts.poppins(
@@ -102,9 +95,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                       color: AppColors.mainColor,
                     ),
                   ),
-                  SizedBox(
-                    height: screenHeight(18.74),
-                  ),
+                  SizedBox(height: screenHeight(18.74)),
                   Text(
                     "Don't worry it happens. Please enter your email address and we will send you a link to reset your password.",
                     style: GoogleFonts.poppins(
@@ -113,9 +104,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                       color: AppColors.textColor1,
                     ),
                   ),
-                  SizedBox(
-                    height: screenHeight(18.74),
-                  ),
+                  SizedBox(height: screenHeight(18.74)),
                   SizedBox(
                     height: screenWidth(34.7),
                     child: TextField(
@@ -128,16 +117,12 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                         ),
                         hintText: "Enter your email here",
                         border: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(10.0),
-                          ),
+                          borderRadius: BorderRadius.all(Radius.circular(10.0)),
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(
-                    height: screenHeight(20.82),
-                  ),
+                  SizedBox(height: screenHeight(20.82)),
                   SizedBox(
                     height: screenWidth(34.7),
                     child: OutlinedButton(
@@ -150,16 +135,14 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                       onPressed: () {
                         final email = _controller.text;
                         context.read<AuthBloc>().add(
-                              AuthEventForgotPassword(email: email),
-                            );
+                          AuthEventForgotPassword(email: email),
+                        );
                       },
                       child: SizedBox(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SizedBox(
-                              width: screenHeight(10.41),
-                            ),
+                            SizedBox(width: screenHeight(10.41)),
                             Text(
                               "Send me password reset link",
                               style: GoogleFonts.poppins(

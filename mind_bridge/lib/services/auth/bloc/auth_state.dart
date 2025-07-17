@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:equatable/equatable.dart';
-
 import '/services/auth/auth_user.dart';
 
 @immutable
@@ -20,10 +19,8 @@ class AuthStateUnitialized extends AuthState {
 class AuthStateRegistering extends AuthState {
   final Exception? exception;
   // ignore: use_super_parameters
-  const AuthStateRegistering({
-    required this.exception,
-    required isLoading,
-  }) : super(isLoading: isLoading);
+  const AuthStateRegistering({required this.exception, required isLoading})
+    : super(isLoading: isLoading);
 }
 
 class AuthStateForgotPassword extends AuthState {
@@ -38,22 +35,15 @@ class AuthStateForgotPassword extends AuthState {
 
 class AuthStateLoggedIn extends AuthState {
   final AuthUser user;
-  const AuthStateLoggedIn({
-    required this.user,
-    required super.isLoading,
-  });
+  const AuthStateLoggedIn({required this.user, required super.isLoading});
 }
 
 class AuthStateLoggedInWithGmail extends AuthState {
-  const AuthStateLoggedInWithGmail({
-    required super.isLoading,
-  });
+  const AuthStateLoggedInWithGmail({required super.isLoading});
 }
 
 class AuthStateNeedsVerification extends AuthState {
-  const AuthStateNeedsVerification({
-    required super.isLoading,
-  });
+  const AuthStateNeedsVerification({required super.isLoading});
 }
 
 class AuthStateLoggedOut extends AuthState with EquatableMixin {

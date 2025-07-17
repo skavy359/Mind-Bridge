@@ -1,10 +1,8 @@
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 import '/constants/routes.dart';
@@ -39,10 +37,7 @@ class _UserProfileState extends State<UserProfile> {
           onPressed: () {
             Navigator.pop(context);
           },
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: AppColors.mainColor,
-          ),
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.mainColor),
         ),
       ),
       body: SingleChildScrollView(
@@ -66,17 +61,12 @@ class _UserProfileState extends State<UserProfile> {
                     onPressed: () {
                       selectImage();
                     },
-                    icon: Icon(
-                      Icons.add_a_photo,
-                      color: AppColors.mainColor,
-                    ),
+                    icon: Icon(Icons.add_a_photo, color: AppColors.mainColor),
                   ),
-                )
+                ),
               ],
             ),
-            const SizedBox(
-              height: 15,
-            ),
+            const SizedBox(height: 15),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
@@ -88,13 +78,9 @@ class _UserProfileState extends State<UserProfile> {
                 ),
               ),
             ),
-            SizedBox(
-              height: screenHeight(6),
-            ),
+            SizedBox(height: screenHeight(6)),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 10),
               child: ListView(
                 shrinkWrap: true,
                 scrollDirection: Axis.vertical,
@@ -109,9 +95,7 @@ class _UserProfileState extends State<UserProfile> {
                       },
                       icon2: Icons.arrow_forward_ios,
                     ),
-                    SizedBox(
-                      height: screenHeight(18),
-                    ),
+                    SizedBox(height: screenHeight(18)),
                     OptionsList(
                       // icon: Iconsax.element_equal,
                       icon: Iconsax.row_vertical,
@@ -122,9 +106,7 @@ class _UserProfileState extends State<UserProfile> {
                       icon2: FontAwesomeIcons.ellipsisVertical,
                       iconSize2: 25,
                     ),
-                    SizedBox(
-                      height: screenHeight(18),
-                    ),
+                    SizedBox(height: screenHeight(18)),
                     OptionsList(
                       // icon: Iconsax.moon,
                       icon: Iconsax.sun_1,
@@ -135,34 +117,30 @@ class _UserProfileState extends State<UserProfile> {
                       icon2: FontAwesomeIcons.toggleOff,
                       iconSize2: 25,
                     ),
-                    SizedBox(
-                      height: screenHeight(18),
-                    ),
+                    SizedBox(height: screenHeight(18)),
                     OptionsList(
                       icon: Iconsax.info_circle,
                       text: 'About us',
-                        onPressed: () {
+                      onPressed: () {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                          title: const Text('About Us'),
-                          content: const Text(
-                            'Mind Bridge is a Flutter-based note sharing app designed to help users collaborate and share knowledge efficiently.',
-                          ),
-                          actions: [
-                            TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('OK'),
+                            title: const Text('About Us'),
+                            content: const Text(
+                              'Mind Bridge is a Flutter-based note sharing app designed to help users collaborate and share knowledge efficiently.',
                             ),
-                          ],
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                              ),
+                            ],
                           ),
                         );
-                        },
+                      },
                       icon2: Icons.arrow_forward_ios,
                     ),
-                    SizedBox(
-                      height: screenHeight(18),
-                    ),
+                    SizedBox(height: screenHeight(18)),
                     OptionsList(
                       icon: Iconsax.message_question4,
                       text: 'Help',
@@ -171,9 +149,7 @@ class _UserProfileState extends State<UserProfile> {
                       },
                       icon2: Icons.arrow_forward_ios,
                     ),
-                    SizedBox(
-                      height: screenHeight(18),
-                    ),
+                    SizedBox(height: screenHeight(18)),
                     OptionsList(
                       icon: Iconsax.logout,
                       text: 'Logout',

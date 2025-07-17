@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +29,8 @@ class FileUploadState extends State<FileUpload> {
           children: [
             MaterialButton(
               shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(20.0))),
+                borderRadius: BorderRadius.all(Radius.circular(20.0)),
+              ),
               elevation: 5.0,
               height: 60,
               onPressed: () {
@@ -39,20 +39,13 @@ class FileUploadState extends State<FileUpload> {
               color: Colors.blue,
               child: const Text(
                 "Get file",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontStyle: FontStyle.normal,
-                ),
+                style: TextStyle(fontSize: 20, fontStyle: FontStyle.normal),
               ),
             ),
-            const SizedBox(
-              height: 20,
-            ),
+            const SizedBox(height: 20),
             MaterialButton(
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(
-                  Radius.circular(20.0),
-                ),
+                borderRadius: BorderRadius.all(Radius.circular(20.0)),
               ),
               elevation: 5.0,
               height: 60,
@@ -68,9 +61,7 @@ class FileUploadState extends State<FileUpload> {
                 ),
               ),
             ),
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10),
           ],
         ),
       ),
@@ -105,8 +96,10 @@ class FileUploadState extends State<FileUpload> {
 
   uploadFile() async {
     try {
-      var imagefile =
-          FirebaseStorage.instance.ref().child("Users").child("/$name");
+      var imagefile = FirebaseStorage.instance
+          .ref()
+          .child("Users")
+          .child("/$name");
       UploadTask task = imagefile.putFile(file!);
       TaskSnapshot snapshot = await task;
       url = await snapshot.ref.getDownloadURL();
@@ -123,10 +116,7 @@ class FileUploadState extends State<FileUpload> {
         );
       }
     } on Exception catch (e) {
-      Fluttertoast.showToast(
-        msg: e.toString(),
-        textColor: Colors.grey,
-      );
+      Fluttertoast.showToast(msg: e.toString(), textColor: Colors.grey);
     }
   }
 }

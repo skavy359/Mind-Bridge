@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 
@@ -27,9 +26,7 @@ class OptionsList extends StatelessWidget {
         height: screenWidth(34.7),
         child: Container(
           decoration: BoxDecoration(
-            border: Border.all(
-              color: AppColors.textColor1,
-            ),
+            border: Border.all(color: AppColors.textColor1),
             shape: BoxShape.rectangle,
             borderRadius: const BorderRadius.only(
               topRight: Radius.circular(25),
@@ -37,21 +34,12 @@ class OptionsList extends StatelessWidget {
             ),
           ),
           child: Container(
-            padding: EdgeInsets.only(
-              left: screenWidth(13.2),
-            ),
+            padding: EdgeInsets.only(left: screenWidth(13.2)),
             child: Row(
               children: [
-                SizedBox(
-                  width: screenWidth(2),
-                ),
-                Icon(
-                  icon,
-                  color: AppColors.mainColor,
-                ),
-                SizedBox(
-                  width: screenWidth(10),
-                ),
+                SizedBox(width: screenWidth(2)),
+                Icon(icon, color: AppColors.mainColor),
+                SizedBox(width: screenWidth(10)),
                 Text(
                   text,
                   style: GoogleFonts.poppins(
@@ -60,9 +48,7 @@ class OptionsList extends StatelessWidget {
                     color: AppColors.textColor1,
                   ),
                 ),
-                const Spacer(
-                  flex: 1,
-                ),
+                const Spacer(flex: 1),
                 InkWell(
                   onTap: onPressed,
                   child: Icon(
@@ -71,9 +57,7 @@ class OptionsList extends StatelessWidget {
                     color: AppColors.mainColor,
                   ),
                 ),
-                SizedBox(
-                  width: screenWidth(12),
-                )
+                SizedBox(width: screenWidth(12)),
               ],
             ),
           ),

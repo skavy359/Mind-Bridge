@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '/config/size_config.dart';
 import '/constants/colors.dart';
 import '/services/auth/bloc/auth_bloc.dart';
@@ -32,16 +31,12 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    height: screenWidth(34.71),
-                  ),
+                  SizedBox(height: screenWidth(34.71)),
                   Image(
                     height: screenHeight(170),
                     image: const AssetImage('assets/images/mail_box.png'),
                   ),
-                  SizedBox(
-                    height: screenWidth(34.71),
-                  ),
+                  SizedBox(height: screenWidth(34.71)),
                   Text(
                     "We have sent you an email verification link. Please check your email and click on the link to verify your email address. If you don't see the email in your inbox, please check your spam folder. or click the button below, we will send you a new link.",
                     style: GoogleFonts.poppins(
@@ -50,9 +45,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                       color: AppColors.textColor1,
                     ),
                   ),
-                  SizedBox(
-                    height: screenHeight(34.7),
-                  ),
+                  SizedBox(height: screenHeight(34.7)),
                   SizedBox(
                     height: screenWidth(34.7),
                     width: 500,
@@ -65,8 +58,8 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                       ),
                       onPressed: () {
                         context.read<AuthBloc>().add(
-                              const AuthEventSendEmailVerification(),
-                            );
+                          const AuthEventSendEmailVerification(),
+                        );
                       },
                       child: SizedBox(
                         child: Column(
@@ -85,9 +78,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                       ),
                     ),
                   ),
-                  SizedBox(
-                    height: screenHeight(27.8),
-                  ),
+                  SizedBox(height: screenHeight(27.8)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -101,9 +92,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                       ),
                       TextButton(
                         onPressed: () {
-                          context.read<AuthBloc>().add(
-                                const AuthEventLogOut(),
-                              );
+                          context.read<AuthBloc>().add(const AuthEventLogOut());
                         },
                         child: Text(
                           style: GoogleFonts.poppins(

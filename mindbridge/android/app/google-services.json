@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "503976714767",
-    "project_id": "mindbridge-3b93a",
-    "storage_bucket": "mindbridge-3b93a.firebasestorage.app"
+    "project_number": "910162906517",
+    "project_id": "mindbridge-d3ad7",
+    "storage_bucket": "mindbridge-d3ad7.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:503976714767:android:f21b8b545ce5993687797a",
+        "mobilesdk_app_id": "1:910162906517:android:c70094c983d09533163a9c",
         "android_client_info": {
           "package_name": "com.example.mindbridge"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "503976714767-2egqdn3c59ahb907lh7nnr5ulrtlp48j.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyASbamKkswHIg5rSHliht4AYHJ2kPcu0G0"
+          "current_key": "AIzaSyCejkGhLW0a09fo_gTTUcq63O-hqyM4lT0"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "503976714767-2egqdn3c59ahb907lh7nnr5ulrtlp48j.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

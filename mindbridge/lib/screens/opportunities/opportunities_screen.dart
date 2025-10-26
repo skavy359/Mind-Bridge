@@ -15,125 +15,211 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Opportunities'),
-      ),
-      body: Column(
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: _filters.map((filter) {
-                final isSelected = _selectedFilter == filter;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(filter),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() => _selectedFilter = filter);
-                    },
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Opportunities',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      Text(
+                        'Find your next adventure',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              }).toList(),
+                ],
+              ),
             ),
-          ),
 
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _selectedFilter == 'All'
-                  ? FirebaseFirestore.instance
-                  .collection('opportunities')
-                  .orderBy('postedAt', descending: true)
-                  .snapshots()
-                  : FirebaseFirestore.instance
-                  .collection('opportunities')
-                  .where('type', isEqualTo: _selectedFilter.toLowerCase())
-                  .orderBy('postedAt', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                        const SizedBox(height: 16),
-                        Text('Error loading opportunities'),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Please check your internet connection',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.work_outline,
-                          size: 80,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No opportunities yet',
+            // Filter Chips
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: _filters.map((filter) {
+                  final isSelected = _selectedFilter == filter;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      child: FilterChip(
+                        label: Text(
+                          filter,
                           style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            fontSize: 13,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Check back later for new postings',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                          ),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() => _selectedFilter = filter);
+                        },
+                        selectedColor: Theme.of(context).colorScheme.primary,
+                        checkmarkColor: Colors.white,
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : Theme.of(context).colorScheme.primary,
                         ),
-                      ],
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
                     ),
                   );
-                }
+                }).toList(),
+              ),
+            ),
 
-                final opportunities = snapshot.data!.docs;
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: opportunities.length,
-                  itemBuilder: (context, index) {
-                    final opportunity = opportunities[index].data() as Map<String, dynamic>;
-                    return OpportunityCard(
-                      title: opportunity['title'] ?? 'Untitled',
-                      company: opportunity['company'] ?? 'Company',
-                      type: opportunity['type'] ?? 'internship',
-                      location: opportunity['location'] ?? 'Remote',
-                      description: opportunity['description'] ?? '',
-                      deadline: opportunity['deadline'] as Timestamp?,
-                      applyLink: opportunity['applyLink'] ?? '',
-                      postedAt: opportunity['postedAt'] as Timestamp?,
+            // Opportunities List
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _selectedFilter == 'All'
+                    ? FirebaseFirestore.instance
+                    .collection('opportunities')
+                    .orderBy('postedAt', descending: true)
+                    .snapshots()
+                    : FirebaseFirestore.instance
+                    .collection('opportunities')
+                    .where('type', isEqualTo: _selectedFilter.toLowerCase())
+                    .orderBy('postedAt', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     );
-                  },
-                );
-              },
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            size: 64,
+                            color: Colors.red.withOpacity(0.7),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text('Error loading opportunities'),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Please check your internet connection',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.work_outline_rounded,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'No opportunities yet',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Check back later for new postings',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final opportunities = snapshot.data!.docs;
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: opportunities.length,
+                    itemBuilder: (context, index) {
+                      final opportunity = opportunities[index].data() as Map<String, dynamic>;
+
+                      return TweenAnimationBuilder<double>(
+                        duration: Duration(milliseconds: 300 + (index * 50)),
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        builder: (context, value, child) {
+                          return Opacity(
+                            opacity: value,
+                            child: Transform.translate(
+                              offset: Offset(0, 20 * (1 - value)),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: OpportunityCard(
+                          title: opportunity['title'] ?? 'Untitled',
+                          company: opportunity['company'] ?? 'Company',
+                          type: opportunity['type'] ?? 'internship',
+                          location: opportunity['location'] ?? 'Remote',
+                          description: opportunity['description'] ?? '',
+                          deadline: opportunity['deadline'] as Timestamp?,
+                          applyLink: opportunity['applyLink'] ?? '',
+                          postedAt: opportunity['postedAt'] as Timestamp?,
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddOpportunityDialog(context),
-        icon: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded),
         label: const Text('Add Opportunity'),
+        elevation: 4,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
       ),
     );
   }
@@ -149,6 +235,7 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Add Opportunity'),
         content: SingleChildScrollView(
           child: Column(
@@ -214,13 +301,17 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () async {
               if (titleController.text.isEmpty || companyController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please fill required fields'),
+                  SnackBar(
+                    content: const Text('Please fill required fields'),
+                    behavior: SnackBarBehavior.floating,
                     backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 );
                 return;
@@ -245,9 +336,13 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
                 if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Opportunity added successfully!'),
+                    SnackBar(
+                      content: const Text('Opportunity added successfully!'),
+                      behavior: SnackBarBehavior.floating,
                       backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   );
                 }
@@ -256,7 +351,11 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error: $e'),
+                      behavior: SnackBarBehavior.floating,
                       backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   );
                 }
@@ -270,7 +369,7 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
   }
 }
 
-class OpportunityCard extends StatelessWidget {
+class OpportunityCard extends StatefulWidget {
   final String title;
   final String company;
   final String type;
@@ -292,24 +391,44 @@ class OpportunityCard extends StatelessWidget {
     this.postedAt,
   }) : super(key: key);
 
+  @override
+  State<OpportunityCard> createState() => _OpportunityCardState();
+}
+
+class _OpportunityCardState extends State<OpportunityCard> {
+  bool _isPressed = false;
+
   Color _getTypeColor() {
-    switch (type.toLowerCase()) {
+    switch (widget.type.toLowerCase()) {
       case 'internship':
-        return Colors.blue;
+        return const Color(0xFF3B82F6);
       case 'job':
-        return Colors.green;
+        return const Color(0xFF10B981);
       case 'competition':
-        return Colors.orange;
+        return const Color(0xFFFF7A5C);
       default:
         return Colors.grey;
     }
   }
 
+  IconData _getTypeIcon() {
+    switch (widget.type.toLowerCase()) {
+      case 'internship':
+        return Icons.school_rounded;
+      case 'job':
+        return Icons.work_rounded;
+      case 'competition':
+        return Icons.emoji_events_rounded;
+      default:
+        return Icons.work_outline_rounded;
+    }
+  }
+
   String _getTimeAgo() {
-    if (postedAt == null) return 'Recently';
+    if (widget.postedAt == null) return 'Recently';
 
     final now = DateTime.now();
-    final postTime = postedAt!.toDate();
+    final postTime = widget.postedAt!.toDate();
     final difference = now.difference(postTime);
 
     if (difference.inDays > 0) {
@@ -322,9 +441,9 @@ class OpportunityCard extends StatelessWidget {
   }
 
   String _getDeadline() {
-    if (deadline == null) return 'No deadline';
+    if (widget.deadline == null) return 'No deadline';
 
-    final deadlineDate = deadline!.toDate();
+    final deadlineDate = widget.deadline!.toDate();
     final now = DateTime.now();
     final difference = deadlineDate.difference(now);
 
@@ -337,10 +456,18 @@ class OpportunityCard extends StatelessWidget {
     }
   }
 
-  Future<void> _launchUrl() async {
-    if (applyLink.isEmpty) return;
+  bool _isUrgent() {
+    if (widget.deadline == null) return false;
+    final deadlineDate = widget.deadline!.toDate();
+    final now = DateTime.now();
+    final difference = deadlineDate.difference(now);
+    return difference.inDays <= 7 && difference.inDays > 0;
+  }
 
-    final uri = Uri.parse(applyLink);
+  Future<void> _launchUrl() async {
+    if (widget.applyLink.isEmpty) return;
+
+    final uri = Uri.parse(widget.applyLink);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -348,130 +475,243 @@ class OpportunityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _getTypeColor().withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    type == 'job'
-                        ? Icons.work
-                        : type == 'competition'
-                        ? Icons.emoji_events
-                        : Icons.school,
-                    color: _getTypeColor(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        company,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isUrgent = _isUrgent();
 
-            Wrap(
-              spacing: 8,
-              children: [
-                Chip(
-                  label: Text(
-                    type[0].toUpperCase() + type.substring(1),
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  backgroundColor: _getTypeColor().withOpacity(0.1),
-                  labelStyle: TextStyle(color: _getTypeColor()),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-                Chip(
-                  label: Text(
-                    location,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  avatar: const Icon(Icons.location_on, size: 16),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-              ],
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.98 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardTheme.color,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isUrgent
+                  ? Colors.red.withOpacity(0.3)
+                  : (isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.grey.withOpacity(0.1)),
+              width: isUrgent ? 2 : 1,
             ),
-            const SizedBox(height: 12),
-
-            if (description.isNotEmpty) ...[
-              Text(
-                description,
-                style: TextStyle(
-                  color: Colors.grey[700],
-                  fontSize: 14,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
+            boxShadow: [
+              BoxShadow(
+                color: isUrgent
+                    ? Colors.red.withOpacity(0.1)
+                    : Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              const SizedBox(height: 12),
             ],
-
-            Row(
-              children: [
-                Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  _getTimeAgo(),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-                const SizedBox(width: 16),
-                Icon(Icons.event, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  _getDeadline(),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-                const Spacer(),
-                ElevatedButton.icon(
-                  onPressed: _launchUrl,
-                  icon: const Icon(Icons.open_in_new, size: 16),
-                  label: const Text('Apply'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _getTypeColor(),
+                          _getTypeColor().withOpacity(0.7),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _getTypeColor().withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      _getTypeIcon(),
+                      color: Colors.white,
+                      size: 28,
                     ),
                   ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(Icons.business_rounded, size: 14, color: Colors.grey[600]),
+                            const SizedBox(width: 6),
+                            Text(
+                              widget.company,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Tags
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _getTypeColor().withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_getTypeIcon(), size: 14, color: _getTypeColor()),
+                        const SizedBox(width: 6),
+                        Text(
+                          widget.type[0].toUpperCase() + widget.type.substring(1),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: _getTypeColor(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.grey.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.location_on_rounded, size: 14, color: Colors.grey[600]),
+                        const SizedBox(width: 6),
+                        Text(
+                          widget.location,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isUrgent)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.access_time_filled_rounded, size: 14, color: Colors.red),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Urgent',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+
+              if (widget.description.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Text(
+                  widget.description,
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
-            ),
-          ],
+
+              const SizedBox(height: 16),
+              Container(
+                height: 1,
+                color: isDark
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.grey.withOpacity(0.1),
+              ),
+              const SizedBox(height: 14),
+
+              // Footer
+              Row(
+                children: [
+                  Icon(Icons.schedule_rounded, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 6),
+                  Text(
+                    _getTimeAgo(),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(width: 16),
+                  Icon(
+                    Icons.event_rounded,
+                    size: 16,
+                    color: isUrgent ? Colors.red : Colors.grey[600],
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _getDeadline(),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isUrgent ? Colors.red : Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  ElevatedButton.icon(
+                    onPressed: _launchUrl,
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                    label: const Text('Apply'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      elevation: 0,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

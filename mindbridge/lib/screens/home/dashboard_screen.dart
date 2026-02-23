@@ -15,7 +15,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
   int _selectedIndex = 0;
-  final _authService = AuthService();
   late AnimationController _animationController;
 
   final List<Widget> _screens = const [

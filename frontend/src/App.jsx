@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Download, Smartphone, Database, Lock, Zap, Cloud, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { Analytics } from "@vercel/analytics/react";
 
 const DeepSpace = () => {
   const canvasRef = useRef(null);
@@ -676,6 +677,7 @@ const App = ({ onBack }) => {
           </span>
         </footer>
       </div>
+      <Analytics />
     </div>
   );
 };

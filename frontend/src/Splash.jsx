@@ -1,498 +1,511 @@
 import { useState, useEffect, useRef } from "react";
 
-const StarField = ({ phase }) => {
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  return isMobile;
+};
+
+const ParticleField = () => {
   const canvasRef = useRef(null);
-  const starsRef = useRef([]);
+  const particlesRef = useRef([]);
   const rafRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize();
     window.addEventListener("resize", resize);
 
-    starsRef.current = Array.from({ length: 600 }, () => ({
+    particlesRef.current = Array.from({ length: 60 }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
-      r: Math.random() * 1.4 + 0.1,
-      t: Math.random() * Math.PI * 2,
-      spd: Math.random() * 0.004 + 0.001,
-      z: Math.random(),
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: -Math.random() * 0.4 - 0.1,
+      r: Math.random() * 1.5 + 0.5,
+      a: Math.random() * 0.5 + 0.1,
     }));
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const nebulas = [
-        { x: 0.2, y: 0.3, r: 320, c: "rgba(10,50,160,0.07)" },
-        { x: 0.75, y: 0.55, r: 380, c: "rgba(5,30,120,0.06)" },
-        { x: 0.5, y: 0.8, r: 250, c: "rgba(20,70,200,0.05)" },
-        { x: 0.85, y: 0.15, r: 200, c: "rgba(30,80,180,0.04)" },
-        { x: 0.1, y: 0.75, r: 180, c: "rgba(8,40,140,0.06)" },
-      ];
-      nebulas.forEach(n => {
-        const g = ctx.createRadialGradient(
-          n.x * canvas.width, n.y * canvas.height, 0,
-          n.x * canvas.width, n.y * canvas.height, n.r
-        );
-        g.addColorStop(0, n.c);
-        g.addColorStop(1, "transparent");
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      });
-
-      starsRef.current.forEach(s => {
-        s.t += s.spd;
-        const a = (0.2 + 0.8 * Math.abs(Math.sin(s.t))) * (0.4 + s.z * 0.6);
-        const blue = Math.floor(220 + 35 * Math.sin(s.t * 0.3));
-        const green = Math.floor(200 + 40 * Math.sin(s.t * 0.5));
+      particlesRef.current.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.y < -5) { p.y = canvas.height + 5; p.x = Math.random() * canvas.width; }
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
         ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r * (0.5 + s.z * 0.8), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(180,${green},${blue},${a})`;
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,255,157,${p.a})`;
         ctx.fill();
       });
-
       rafRef.current = requestAnimationFrame(draw);
     };
     draw();
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", resize);
-    };
+    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener("resize", resize); };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }}
-    />
-  );
+  return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none" }} />;
 };
 
-const WormholeCenter = ({ phase }) => {
-  const [angle, setAngle] = useState(0);
-  const rafRef = useRef(null);
-
-  useEffect(() => {
-    const tick = () => {
-      setAngle(a => a + (phase === "entering" ? 1.2 : phase === "active" ? 0.5 : 0.2));
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [phase]);
-
-  const rings = [
-    { rx: 220, ry: 66, spd: 1.0, col: "#38b8f8" },
-    { rx: 195, ry: 58, spd: -1.4, col: "#1a7fc4" },
-    { rx: 170, ry: 51, spd: 0.8,  col: "#2a9fd4" },
-    { rx: 145, ry: 43, spd: -1.1, col: "#38b8f8" },
-    { rx: 120, ry: 36, spd: 1.6,  col: "#1a7fc4" },
-    { rx: 96,  ry: 29, spd: -0.9, col: "#60c8ff" },
-    { rx: 74,  ry: 22, spd: 2.0,  col: "#38b8f8" },
-    { rx: 54,  ry: 16, spd: -1.8, col: "#1a7fc4" },
-    { rx: 36,  ry: 11, spd: 2.4,  col: "#90d8ff" },
-    { rx: 20,  ry: 6,  spd: -3.0, col: "#38b8f8" },
-    { rx: 10,  ry: 3,  spd: 3.5,  col: "#b8e8ff" },
+const FloatingPapers = ({ visible }) => {
+  const items = [
+    { x: "12%", y: "18%", rot: -20, d: 0, icon: "📄" },
+    { x: "78%", y: "12%", rot: 25, d: 0.2, icon: "📘" },
+    { x: "20%", y: "68%", rot: -30, d: 0.5, icon: "📝" },
+    { x: "82%", y: "55%", rot: 35, d: 0.15, icon: "❓" },
+    { x: "45%", y: "8%", rot: 12, d: 0.4, icon: "📋" },
+    { x: "8%", y: "42%", rot: -18, d: 0.3, icon: "❓" },
+    { x: "88%", y: "30%", rot: 20, d: 0.1, icon: "📄" },
+    { x: "55%", y: "78%", rot: -22, d: 0.6, icon: "📚" },
+    { x: "30%", y: "82%", rot: 28, d: 0.25, icon: "❓" },
   ];
-
   return (
-    <div style={{
-      position: "absolute",
-      left: "50%", top: "50%",
-      transform: "translate(-50%,-50%)",
-      width: "520px", height: "520px",
-      zIndex: 2, pointerEvents: "none",
-    }}>
-      <svg viewBox="0 0 500 500" style={{ width: "100%", height: "100%", overflow: "visible" }}>
-        <defs>
-          <radialGradient id="bhCore" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"  stopColor="#000005" />
-            <stop offset="35%" stopColor="#00020a" />
-            <stop offset="65%" stopColor="#001830" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#1a7fc4" stopOpacity="0" />
-          </radialGradient>
-          <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"  stopColor="#38b8f8" stopOpacity="0.15" />
-            <stop offset="60%" stopColor="#1a7fc4" stopOpacity="0.06" />
-            <stop offset="100%" stopColor="transparent" />
-          </radialGradient>
-          <filter id="ringGlow">
-            <feGaussianBlur stdDeviation="2.5" result="b" />
-            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-          <filter id="coreGlow">
-            <feGaussianBlur stdDeviation="8" result="b" />
-            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
-
-        <circle cx="250" cy="250" r="245" fill="url(#innerGlow)" />
-
-        {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => (
-          <ellipse key={`streak${i}`}
-            cx="250" cy="250" rx="240" ry="14"
-            stroke={`rgba(56,184,248,${0.06 + (i % 3) * 0.03})`}
-            strokeWidth="6" fill="none"
-            transform={`rotate(${deg + angle * 0.18},250,250)`}
-            filter="url(#ringGlow)"
-          />
-        ))}
-
-        {rings.map((ring, i) => (
-          <ellipse key={i}
-            cx="250" cy="250"
-            rx={ring.rx} ry={ring.ry}
-            stroke={ring.col}
-            strokeWidth={i < 3 ? 1.5 : i < 6 ? 0.9 : 0.5}
-            fill="none"
-            opacity={0.08 + (i / rings.length) * 0.28}
-            transform={`rotate(${angle * ring.spd * 0.4},250,250)`}
-            filter={i < 5 ? "url(#ringGlow)" : undefined}
-          />
-        ))}
-
-        <circle cx="250" cy="250" r="248" fill="url(#bhCore)" />
-
-        <ellipse cx="250" cy="250" rx="48" ry="14"
-          stroke="rgba(144,216,255,0.6)" strokeWidth="2" fill="none"
-          filter="url(#ringGlow)"
-          transform={`rotate(${angle * 2},250,250)`}
-        />
-        <ellipse cx="250" cy="250" rx="38" ry="11"
-          stroke="rgba(56,184,248,0.8)" strokeWidth="1.5" fill="none"
-          filter="url(#coreGlow)"
-          transform={`rotate(${-angle * 2.5},250,250)`}
-        />
-      </svg>
+    <div style={{ position: "absolute", inset: 0, zIndex: 3, pointerEvents: "none" }}>
+      {items.map((p, i) => (
+        <div key={i} style={{
+          position: "absolute", left: p.x, top: p.y, fontSize: "26px",
+          opacity: visible ? 0.9 : 0,
+          transform: visible ? `rotate(${p.rot}deg) scale(1)` : `rotate(0deg) scale(0.3) translateY(50px)`,
+          transition: `all 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) ${p.d}s`,
+          animation: visible ? `paperDrift 4s ease-in-out ${p.d}s infinite alternate` : "none",
+          filter: "drop-shadow(0 0 10px rgba(0,255,157,0.25))",
+        }}>{p.icon}</div>
+      ))}
     </div>
   );
 };
 
-const SplashScreen = ({ onComplete }) => {
-  const [phase, setPhase] = useState("idle");
-  const [countdown, setCountdown] = useState(3);
-  const [textStep, setTextStep] = useState(0);
-  const [barWidth, setBarWidth] = useState(0);
-  const [fadeOut, setFadeOut] = useState(false);
+const Stickman = ({ confused, lookingUp }) => {
+  const headTilt = confused ? -8 : lookingUp ? -15 : 0;
+  const bodyLean = confused ? 3 : 0;
 
-  const lines = [
-    { text: "INITIALIZING MINDBRIDGE", delay: 600 },
-    { text: "ESTABLISHING QUANTUM SYNC", delay: 1400 },
-    { text: "TRAVERSING THE WORMHOLE", delay: 2200 },
-    { text: "TRANSMISSION READY", delay: 3000 },
-  ];
+  return (
+    <svg viewBox="0 0 260 380" width={window.innerWidth < 768 ? "160" : "220"} height={window.innerWidth < 768 ? "230" : "320"} style={{
+      filter: "drop-shadow(0 0 25px rgba(0,255,157,0.15))",
+      transition: "transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
+      transform: `rotate(${bodyLean}deg)`,
+    }}>
+      <rect x="30" y="248" width="200" height="6" rx="3"
+        fill="rgba(0,255,157,0.08)" stroke="var(--primary)" strokeWidth="1" opacity="0.4" />
+      <line x1="50" y1="254" x2="50" y2="340" stroke="var(--primary)" strokeWidth="2" opacity="0.2" />
+      <line x1="210" y1="254" x2="210" y2="340" stroke="var(--primary)" strokeWidth="2" opacity="0.2" />
+      <g style={{ transition: "all 0.5s ease" }}>
+        <rect x="95" y="225" width="56" height="23" rx="3"
+          fill="rgba(0,255,157,0.04)" stroke="var(--primary)" strokeWidth="1.5" opacity="0.5" />
+        <rect x="88" y="248" width="70" height="4" rx="2"
+          fill="rgba(0,255,157,0.06)" stroke="var(--primary)" strokeWidth="1" opacity="0.3" />
+        <rect x="99" y="229" width="48" height="15" rx="1"
+          fill="rgba(0,255,157,0.06)" opacity="0.5" />
+      </g>
+      <path d="M80 250 Q80 290 85 320" stroke="var(--primary)" strokeWidth="1.5" opacity="0.15" fill="none" />
+      <path d="M180 250 Q180 290 175 320" stroke="var(--primary)" strokeWidth="1.5" opacity="0.15" fill="none" />
+      <path d="M75 250 Q130 260 185 250" stroke="var(--primary)" strokeWidth="1" opacity="0.1" fill="none" />
+
+      <g style={{ transition: "all 0.6s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+        <line x1="130" y1="148" x2="130" y2="250" stroke="var(--primary)" strokeWidth="2.5" opacity="0.7"
+          strokeLinecap="round" />
+
+        <line x1="100" y1="165" x2="160" y2="165" stroke="var(--primary)" strokeWidth="2" opacity="0.5"
+          strokeLinecap="round" />
+
+        <path
+          d={confused
+            ? "M100 165 Q85 140 95 105"  
+            : lookingUp
+              ? "M100 165 Q80 175 70 200" 
+              : "M100 165 Q85 195 90 230"  
+          }
+          stroke="var(--primary)" strokeWidth="2" fill="none" opacity="0.6" strokeLinecap="round"
+          style={{ transition: "d 0.8s cubic-bezier(0.16, 1, 0.3, 1)" }}
+        />
+
+        <path
+          d={lookingUp
+            ? "M160 165 Q178 175 185 200"
+            : "M160 165 Q175 200 150 235"
+          }
+          stroke="var(--primary)" strokeWidth="2" fill="none" opacity="0.6" strokeLinecap="round"
+          style={{ transition: "d 0.8s ease" }}
+        />
+
+        <path d="M130 250 Q115 280 95 320" stroke="var(--primary)" strokeWidth="2.5" opacity="0.5" fill="none" strokeLinecap="round" />
+        <path d="M130 250 Q145 280 165 320" stroke="var(--primary)" strokeWidth="2.5" opacity="0.5" fill="none" strokeLinecap="round" />
+        <line x1="95" y1="320" x2="80" y2="322" stroke="var(--primary)" strokeWidth="2" opacity="0.3" strokeLinecap="round" />
+        <line x1="165" y1="320" x2="180" y2="322" stroke="var(--primary)" strokeWidth="2" opacity="0.3" strokeLinecap="round" />
+      </g>
+
+      <g style={{
+        transition: "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
+        transformOrigin: "130px 120px",
+        transform: `rotate(${headTilt}deg)`,
+      }}>
+        <circle cx="130" cy="100" r="38" fill="rgba(0,18,9,0.6)" stroke="var(--primary)" strokeWidth="2" opacity="0.85" />
+
+        <path d="M95 85 Q130 60 165 85" stroke="var(--primary)" strokeWidth="1.5" fill="none" opacity="0.3" />
+
+        {confused ? (
+          <>
+            <g style={{ animation: "eyeLookAround 2s ease-in-out infinite" }}>
+              <circle cx="118" cy="95" r="4" fill="none" stroke="var(--primary)" strokeWidth="1.5" opacity="0.7" />
+              <circle cx="118" cy="95" r="1.5" fill="var(--primary)" opacity="0.8" />
+              <circle cx="142" cy="95" r="4" fill="none" stroke="var(--primary)" strokeWidth="1.5" opacity="0.7" />
+              <circle cx="142" cy="95" r="1.5" fill="var(--primary)" opacity="0.8" />
+            </g>
+            <line x1="110" y1="82" x2="122" y2="85" stroke="var(--primary)" strokeWidth="1.5" opacity="0.5" />
+            <line x1="150" y1="82" x2="138" y2="85" stroke="var(--primary)" strokeWidth="1.5" opacity="0.5" />
+          </>
+        ) : (
+          <>
+            <circle cx="118" cy="95" r="3" fill="var(--primary)" opacity="0.7" />
+            <circle cx="142" cy="95" r="3" fill="var(--primary)" opacity="0.7" />
+          </>
+        )}
+
+        {confused ? (
+          <path d="M118 115 Q130 110 142 115" stroke="var(--primary)" strokeWidth="1.5" fill="none" opacity="0.5" />
+        ) : lookingUp ? (
+          <circle cx="130" cy="114" r="4" fill="none" stroke="var(--primary)" strokeWidth="1.5" opacity="0.4" />
+        ) : (
+          <path d="M120 112 Q130 120 140 112" stroke="var(--primary)" strokeWidth="1.5" fill="none" opacity="0.5" />
+        )}
+      </g>
+
+      {confused && (
+        <>
+          <text x="170" y="70" fill="var(--primary)" fontSize="28" fontWeight="bold" opacity="0.8"
+            style={{ animation: "questionFloat 1.2s ease-in-out infinite alternate" }}>?</text>
+          <text x="80" y="55" fill="var(--primary)" fontSize="22" fontWeight="bold" opacity="0.5"
+            style={{ animation: "questionFloat 1.5s ease-in-out 0.3s infinite alternate" }}>?</text>
+          <text x="155" y="40" fill="var(--primary)" fontSize="18" fontWeight="bold" opacity="0.35"
+            style={{ animation: "questionFloat 1.8s ease-in-out 0.6s infinite alternate" }}>?</text>
+        </>
+      )}
+    </svg>
+  );
+};
+
+const DivineFigure = ({ visible }) => (
+  <div style={{
+    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+    display: "flex", flexDirection: "column", alignItems: "center",
+    opacity: visible ? 1 : 0,
+    transition: "opacity 1.5s ease",
+    zIndex: 5, pointerEvents: "none",
+    transform: window.innerWidth < 768 ? "scale(0.8)" : "scale(1)",
+    transformOrigin: "center top",
+  }}>
+    <div style={{
+      position: "absolute", top: "-10%", left: "50%",
+      transform: "translateX(-50%)",
+      width: "200vw", height: "120vh",
+      zIndex: 0,
+    }}>
+      <div style={{
+        position: "absolute", top: "0", left: "50%", transform: "translateX(-50%)",
+        width: window.innerWidth < 768 ? "400px" : "800px", height: window.innerWidth < 768 ? "400px" : "800px",
+        background: "radial-gradient(circle, rgba(0,255,157,0.12) 0%, rgba(0,255,157,0.04) 40%, transparent 70%)",
+        borderRadius: "50%",
+        animation: visible ? "divineGlowPulse 3s ease-in-out infinite" : "none",
+      }} />
+
+      {[...Array(16)].map((_, i) => {
+        const angle = (i * 22.5) - 90;
+        return (
+          <div key={i} style={{
+            position: "absolute",
+            top: "8%", left: "50%",
+            width: "3px", height: visible ? "90vh" : "0",
+            background: `linear-gradient(180deg, rgba(0,255,157,${0.25 - i * 0.01}), transparent 80%)`,
+            transformOrigin: "top center",
+            transform: `translateX(-50%) rotate(${angle}deg)`,
+            transition: `height 2s cubic-bezier(0.16, 1, 0.3, 1) ${0.05 * i}s`,
+            filter: "blur(2px)",
+          }} />
+        );
+      })}
+
+      {[...Array(8)].map((_, i) => {
+        const angle = (i * 45) - 90;
+        return (
+          <div key={`thick-${i}`} style={{
+            position: "absolute",
+            top: "8%", left: "50%",
+            width: "8px", height: visible ? "70vh" : "0",
+            background: `linear-gradient(180deg, rgba(0,255,157,0.15), transparent 60%)`,
+            transformOrigin: "top center",
+            transform: `translateX(-50%) rotate(${angle}deg)`,
+            transition: `height 2.5s cubic-bezier(0.16, 1, 0.3, 1) ${0.1 * i + 0.3}s`,
+            filter: "blur(6px)",
+          }} />
+        );
+      })}
+    </div>
+
+    <div style={{
+      position: "absolute", top: "5%", left: "50%",
+      transform: `translateX(-50%) translateY(${visible ? "0" : "-120px"}) scale(${visible ? 1 : 0.5})`,
+      transition: "all 1.8s cubic-bezier(0.16, 1, 0.3, 1)",
+      zIndex: 2,
+    }}>
+      <svg viewBox="0 0 220 320" width="180" height="260" style={{
+        filter: `drop-shadow(0 0 40px rgba(0,255,157,0.5)) drop-shadow(0 0 80px rgba(0,255,157,0.2))`,
+      }}>
+        <ellipse cx="110" cy="32" rx="48" ry="14" fill="none"
+          stroke="var(--primary)" strokeWidth="2.5" opacity="0.9"
+          style={{ animation: visible ? "haloSpin 3s linear infinite" : "none" }} />
+        <ellipse cx="110" cy="32" rx="55" ry="10" fill="none"
+          stroke="var(--primary)" strokeWidth="1" opacity="0.4"
+          style={{ animation: visible ? "haloSpin 4s linear infinite reverse" : "none" }} />
+        <ellipse cx="110" cy="32" rx="42" ry="16" fill="none"
+          stroke="var(--primary)" strokeWidth="1.5" opacity="0.6"
+          style={{ animation: visible ? "haloSpin 5s linear infinite" : "none" }} />
+
+        <circle cx="110" cy="68" r="32" fill="rgba(0,18,9,0.5)" stroke="var(--primary)" strokeWidth="2.5" />
+        <path d="M96 64 Q100 68 104 64" stroke="var(--primary)" strokeWidth="2" fill="none" opacity="0.8" />
+        <path d="M116 64 Q120 68 124 64" stroke="var(--primary)" strokeWidth="2" fill="none" opacity="0.8" />
+        <path d="M100 80 Q110 90 120 80" stroke="var(--primary)" strokeWidth="2" fill="none" opacity="0.6" />
+
+        <path d="M110 100 L50 300 L170 300 Z"
+          fill="rgba(0,255,157,0.03)" stroke="var(--primary)" strokeWidth="2" opacity="0.5" />
+        <path d="M110 100 L80 280" stroke="var(--primary)" strokeWidth="1" opacity="0.2" />
+        <path d="M110 100 L140 280" stroke="var(--primary)" strokeWidth="1" opacity="0.2" />
+        <path d="M110 100 L95 270" stroke="var(--primary)" strokeWidth="0.8" opacity="0.15" />
+        <path d="M110 100 L125 270" stroke="var(--primary)" strokeWidth="0.8" opacity="0.15" />
+        <line x1="75" y1="170" x2="145" y2="170" stroke="var(--primary)" strokeWidth="1.5" opacity="0.3" />
+
+        <path d="M85 140 Q40 130 15 100"
+          stroke="var(--primary)" strokeWidth="2.5" fill="none" opacity="0.7" strokeLinecap="round"
+          style={{ animation: visible ? "armGesture 3s ease-in-out infinite alternate" : "none" }} />
+        <path d="M135 140 Q180 130 205 100"
+          stroke="var(--primary)" strokeWidth="2.5" fill="none" opacity="0.7" strokeLinecap="round"
+          style={{ animation: visible ? "armGesture 3s ease-in-out 0.5s infinite alternate" : "none" }} />
+        <circle cx="15" cy="100" r="6" fill="none" stroke="var(--primary)" strokeWidth="1.5" opacity="0.5" />
+        <circle cx="205" cy="100" r="6" fill="none" stroke="var(--primary)" strokeWidth="1.5" opacity="0.5" />
+      </svg>
+    </div>
+  </div>
+);
+
+const TypeWriter = ({ text, visible, delay = 0, speed = 45, style = {} }) => {
+  const [displayed, setDisplayed] = useState("");
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
-    const t0 = setTimeout(() => setPhase("entering"), 300);
-    const t1 = setTimeout(() => setPhase("active"), 1800);
+    if (!visible) { setDisplayed(""); setStarted(false); return; }
+    const t = setTimeout(() => setStarted(true), delay);
+    return () => clearTimeout(t);
+  }, [visible, delay]);
 
-    lines.forEach((line, i) => {
-      setTimeout(() => setTextStep(i + 1), line.delay);
-    });
+  useEffect(() => {
+    if (!started) return;
+    let idx = 0;
+    const iv = setInterval(() => {
+      idx++;
+      setDisplayed(text.slice(0, idx));
+      if (idx >= text.length) clearInterval(iv);
+    }, speed);
+    return () => clearInterval(iv);
+  }, [started, text, speed]);
 
-    let w = 0;
-    const barInterval = setInterval(() => {
-      w += 0.6;
-      if (w >= 100) { w = 100; clearInterval(barInterval); }
-      setBarWidth(w);
-    }, 28);
+  return (
+    <div style={{
+      fontFamily: "'JetBrains Mono', monospace",
+      minHeight: "28px", opacity: visible ? 1 : 0,
+      transition: "opacity 0.5s ease", ...style,
+    }}>
+      {displayed}
+      {started && displayed.length < text.length && (
+        <span style={{ animation: "blink 0.6s step-end infinite", color: "var(--primary)" }}>▌</span>
+      )}
+    </div>
+  );
+};
 
-    const c1 = setTimeout(() => setCountdown(2), 1500);
-    const c2 = setTimeout(() => setCountdown(1), 2500);
-    const c3 = setTimeout(() => setCountdown(0), 3500);
+const OrganizedGrid = ({ visible }) => {
+  const items = ["📄", "📘", "📝", "📋", "📚", "📄"];
+  return (
+    <div style={{
+      position: "absolute", bottom: window.innerWidth < 768 ? "10%" : "12%", left: "50%", transform: "translateX(-50%)",
+      display: "grid", gridTemplateColumns: "repeat(3, 44px)", gap: "8px",
+      opacity: visible ? 1 : 0, transition: "all 1s ease 0.8s", zIndex: 6,
+    }}>
+      {items.map((item, i) => (
+        <div key={i} style={{
+          width: window.innerWidth < 768 ? "44px" : "52px", height: window.innerWidth < 768 ? "44px" : "52px", display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: window.innerWidth < 768 ? "16px" : "20px", borderRadius: "10px",
+          background: "rgba(0,255,157,0.05)", border: "1px solid rgba(0,255,157,0.25)",
+          backdropFilter: "blur(10px)",
+          transform: visible ? "scale(1) rotate(0deg)" : "scale(0) rotate(180deg)",
+          transition: `transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.9 + i * 0.08}s`,
+          boxShadow: "0 0 15px rgba(0,255,157,0.1)",
+        }}>{item}</div>
+      ))}
+    </div>
+  );
+};
 
-    const tFade = setTimeout(() => setFadeOut(true), 4200);
-    const tDone = setTimeout(() => { if (onComplete) onComplete(); }, 5000);
+const LogoReveal = ({ visible }) => (
+  <div style={{
+    position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+    alignItems: "center", justifyContent: "center", zIndex: 10,
+    opacity: visible ? 1 : 0, transition: "opacity 1s ease",
+  }}>
+    <div style={{
+      position: "absolute", inset: 0,
+      background: "radial-gradient(circle, rgba(0,255,157,0.08) 0%, transparent 60%)",
+      animation: visible ? "neonFlash 0.6s ease-out" : "none",
+    }} />
+    <h1 style={{
+      fontFamily: "'Outfit', sans-serif", fontWeight: 900, fontSize: "clamp(60px, 10vw, 100px)",
+      color: "var(--primary)", margin: 0, letterSpacing: "-3px",
+      filter: "drop-shadow(0 0 50px rgba(0,255,157,0.4))",
+      transform: visible ? "scale(1)" : "scale(0.3)",
+      transition: "transform 1s cubic-bezier(0.16, 1, 0.3, 1)",
+    }}>MINDBRIDGE</h1>
+    <div style={{
+      fontFamily: "'JetBrains Mono', monospace", fontSize: "14px",
+      color: "rgba(0,255,157,0.6)", letterSpacing: "5px", marginTop: "25px",
+      opacity: visible ? 1 : 0, transition: "opacity 0.8s ease 0.6s",
+    }}>YOUR STUDY UNIVERSE, CONNECTED.</div>
+  </div>
+);
 
-    return () => {
-      [t0, t1, c1, c2, c3, tFade, tDone].forEach(clearTimeout);
-      clearInterval(barInterval);
-    };
-  }, []);
+const SplashScreen = ({ onComplete }) => {
+  const isMobile = useIsMobile();
+  const [scene, setScene] = useState(0);
+  const [confused, setConfused] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setScene(1), 300),
+      setTimeout(() => setConfused(true), 800),
+      setTimeout(() => setScene(2), 3800),
+      setTimeout(() => { setConfused(false); setLookingUp(true); }, 4200),
+      setTimeout(() => setScene(3), 7500),
+      setTimeout(() => setLookingUp(false), 7500),
+      setTimeout(() => setFadeOut(true), 9500),
+      setTimeout(() => onComplete && onComplete(), 10300),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [onComplete]);
 
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 9999,
-      background: "#00030a",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      overflow: "hidden",
-      opacity: fadeOut ? 0 : 1,
-      transition: fadeOut ? "opacity 0.8s ease" : "none",
+      background: "#020202", overflow: "hidden",
+      opacity: fadeOut ? 0 : 1, transition: "opacity 0.8s ease",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Courier+Prime:wght@400;700&display=swap');
-
-        @keyframes scanline {
-          0% { transform: translateY(-100vh); }
-          100% { transform: translateY(100vh); }
+        @keyframes paperDrift {
+          0% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+          100% { transform: translateY(-18px) rotate(calc(var(--rot, 0deg) + 8deg)); }
         }
-        @keyframes flicker {
-          0%,88%,90%,92%,100% { opacity: 1; }
-          89% { opacity: 0.4; }
-          91% { opacity: 0.7; }
+        @keyframes questionFloat {
+          0% { transform: translateY(0) scale(1); opacity: 0.3; }
+          100% { transform: translateY(-12px) scale(1.1); opacity: 0.9; }
         }
-        @keyframes textReveal {
-          from { opacity: 0; letter-spacing: 0.5em; transform: translateY(6px); }
-          to   { opacity: 1; letter-spacing: 0.28em; transform: translateY(0); }
+        @keyframes eyeLookAround {
+          0%, 100% { transform: translateX(0); }
+          30% { transform: translateX(-3px); }
+          70% { transform: translateX(3px); }
         }
-        @keyframes logLine {
-          from { opacity: 0; transform: translateX(-8px); }
-          to   { opacity: 1; transform: translateX(0); }
+        @keyframes divineGlowPulse {
+          0%, 100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
+          50% { opacity: 1; transform: translateX(-50%) scale(1.2); }
         }
-        @keyframes pulse {
-          0%,100% { opacity: 0.4; transform: scale(1); }
-          50%      { opacity: 1;   transform: scale(1.08); }
+        @keyframes haloSpin {
+          0% { transform: rotateY(0deg); }
+          100% { transform: rotateY(360deg); }
         }
-        @keyframes blink {
-          0%,100% { opacity: 1; } 50% { opacity: 0; }
+        @keyframes armGesture {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(-6px); }
         }
-        @keyframes warpIn {
-          from { opacity: 0; transform: translate(-50%,-50%) scale(0.2); filter: blur(20px); }
-          to   { opacity: 1; transform: translate(-50%,-50%) scale(1);   filter: blur(0); }
-        }
-        @keyframes cornerPulse {
-          0%,100% { opacity: 0.3; } 50% { opacity: 0.7; }
-        }
-        @keyframes horizonGlow {
-          0%,100% { opacity: 0.5; } 50% { opacity: 1; }
-        }
-
-        @media (max-width: 768px) {
-          body { margin: 0; padding: 0; }
-        }
-
-        @media (max-width: 480px) {
-          body { margin: 0; padding: 0; font-size: 14px; }
-        }
+        @keyframes blink { 50% { opacity: 0; } }
+        @keyframes neonFlash { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+        @keyframes scanDown { 0% { top: -2px; } 100% { top: 100%; } }
       `}</style>
 
-      <StarField phase={phase} />
+      <div className="noise-overlay" style={{ opacity: 0.04 }} />
+      <ParticleField />
 
       <div style={{
-        position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-        backgroundImage: "repeating-linear-gradient(0deg,rgba(0,0,0,0.022) 0px,rgba(0,0,0,0.022) 1px,transparent 1px,transparent 4px)",
-        animation: "flicker 7s ease-in-out infinite",
+        position: "absolute", left: 0, right: 0, height: "2px",
+        background: "linear-gradient(90deg, transparent, var(--primary), transparent)",
+        opacity: 0.12, zIndex: 20, pointerEvents: "none",
+        animation: "scanDown 5s linear infinite",
       }} />
 
       <div style={{
-        position: "absolute", left: 0, right: 0, height: "3px", zIndex: 3,
-        background: "linear-gradient(90deg,transparent,rgba(56,184,248,0.12),transparent)",
-        animation: "scanline 6s linear infinite",
-        pointerEvents: "none",
-      }} />
-
-      <div style={{
-        position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-        background: "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.75) 100%)",
-      }} />
-
-      <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, height: "1px", zIndex: 4,
-        background: "linear-gradient(90deg,transparent,rgba(56,184,248,0.5) 40%,rgba(56,184,248,0.8) 50%,rgba(56,184,248,0.5) 60%,transparent)",
-        boxShadow: "0 0 20px rgba(56,184,248,0.3)",
-        animation: "horizonGlow 3s ease-in-out infinite",
-      }} />
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0, height: "1px", zIndex: 4,
-        background: "linear-gradient(90deg,transparent,rgba(26,127,196,0.3) 40%,rgba(26,127,196,0.5) 50%,rgba(26,127,196,0.3) 60%,transparent)",
-      }} />
-
-      {[
-        { top: "24px", left: "24px",  borderTop: "1px solid", borderLeft: "1px solid" },
-        { top: "24px", right: "24px", borderTop: "1px solid", borderRight: "1px solid" },
-        { bottom: "24px", left: "24px",  borderBottom: "1px solid", borderLeft: "1px solid" },
-        { bottom: "24px", right: "24px", borderBottom: "1px solid", borderRight: "1px solid" },
-      ].map((s, i) => (
-        <div key={i} style={{
-          position: "absolute", width: "28px", height: "28px", zIndex: 5,
-          borderColor: "rgba(56,184,248,0.35)", ...s,
-          animation: `cornerPulse ${2 + i * 0.3}s ease-in-out ${i * 0.2}s infinite`,
-        }} />
-      ))}
-
-      <div style={{
-        position: "absolute", left: "50%", top: "50%",
-        animation: phase === "idle" ? "none" : "warpIn 1.4s cubic-bezier(0.16,1,0.3,1) forwards",
+        position: "absolute", inset: 0,
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        opacity: scene >= 1 && scene < 3 ? 1 : 0,
+        transition: "opacity 1s ease",
+        transform: scene === 3 ? "scale(0.7)" : "scale(1)",
       }}>
-        <WormholeCenter phase={phase} />
-      </div>
-
-      <div style={{
-        position: "relative", zIndex: 10,
-        display: "flex", flexDirection: "column", alignItems: "center",
-        gap: "0", textAlign: "center",
-        width: "100%", maxWidth: "680px",
-        padding: "0 40px",
-      }}>
+        <FloatingPapers visible={scene === 1} />
 
         <div style={{
-          fontFamily: "'Courier New',monospace", fontSize: "10px",
-          color: "rgba(56,184,248,0.45)", letterSpacing: "0.4em",
-          textTransform: "uppercase", marginBottom: "32px",
-          opacity: textStep >= 1 ? 1 : 0,
-          transition: "opacity 0.6s ease",
+          transform: scene === 2 ? "translateY(100px) scale(0.75)" : "translateY(0)",
+          transition: "all 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
+          zIndex: 4,
         }}>
-          TARS · NAVIGATION SYSTEM · ONLINE
+          <Stickman confused={confused && scene === 1} lookingUp={lookingUp} />
         </div>
 
-        <h1 style={{
-          fontFamily: "'Cinzel',serif", fontWeight: 800,
-          fontSize: "clamp(52px,9vw,110px)",
-          lineHeight: 0.88, margin: 0,
-          letterSpacing: "0.1em",
-          opacity: textStep >= 1 ? 1 : 0,
-          animation: textStep >= 1 ? "textReveal 1s cubic-bezier(0.16,1,0.3,1) forwards" : "none",
-        }}>
-          <span style={{ display: "block", color: "#d0e8f8", textShadow: "0 0 60px rgba(160,210,255,0.2)" }}>
-            MIND
-          </span>
-          <span style={{
-            display: "block",
-            background: "linear-gradient(130deg,#003a6a 0%,#1a7fc4 30%,#38b8f8 52%,#90d8ff 72%,#1a7fc4 100%)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            filter: "drop-shadow(0 0 40px rgba(56,184,248,0.6))",
-            animation: "pulse 3s ease-in-out infinite",
-          }}>
-            BRIDGE
-          </span>
-        </h1>
+        <TypeWriter
+          text='"Where are those notes...?"'
+          visible={scene === 1}
+          delay={1200}
+          style={{ marginTop: "20px", color: "rgba(255,255,255,0.45)", fontSize: "16px", zIndex: 4, position: "relative" }}
+        />
+      </div>
 
+      <DivineFigure visible={scene === 2} />
+
+      <div style={{
+        position: "absolute", top: "40%", left: "50%", transform: "translateX(-50%)",
+        zIndex: 8, textAlign: "center",
+        opacity: scene === 2 ? 1 : 0,
+        transition: "opacity 0.8s ease 0.5s",
+      }}>
         <div style={{
-          marginTop: "20px", height: "1px", width: "60%",
-          background: "linear-gradient(90deg,transparent,rgba(56,184,248,0.6) 40%,rgba(56,184,248,0.9) 50%,rgba(56,184,248,0.6) 60%,transparent)",
-          boxShadow: "0 0 20px rgba(56,184,248,0.35)",
-          opacity: textStep >= 1 ? 1 : 0,
-          transition: "opacity 0.8s ease 0.4s",
-        }} />
-
-        <p style={{
-          marginTop: "20px",
-          fontFamily: "Georgia,serif", fontSize: "15px", fontStyle: "italic",
-          color: "rgba(160,200,240,0.65)", letterSpacing: "0.06em",
-          opacity: textStep >= 2 ? 1 : 0, transition: "opacity 0.8s ease",
+          background: "rgba(0,255,157,0.06)",
+          border: "1px solid rgba(0,255,157,0.3)",
+          borderRadius: "20px", padding: window.innerWidth < 768 ? "12px 20px" : "18px 35px",
+          backdropFilter: "blur(15px)",
+          boxShadow: "0 0 30px rgba(0,255,157,0.1)",
         }}>
-          A Collaborative Learning Platform
-        </p>
-
-        <div style={{
-          marginTop: "40px", width: "100%", maxWidth: "360px",
-          height: "1px", background: "rgba(26,127,196,0.15)",
-          position: "relative",
-          opacity: textStep >= 1 ? 1 : 0, transition: "opacity 0.5s ease",
-        }}>
-          <div style={{
-            position: "absolute", left: 0, top: 0, bottom: 0,
-            width: `${barWidth}%`,
-            background: "linear-gradient(90deg,#1a7fc4,#38b8f8,#90d8ff)",
-            boxShadow: "0 0 12px rgba(56,184,248,0.6)",
-            transition: "width 0.05s linear",
-          }} />
-          {[25, 50, 75].map(pct => (
-            <div key={pct} style={{
-              position: "absolute", left: `${pct}%`, top: "-3px",
-              width: "1px", height: "7px",
-              background: "rgba(56,184,248,0.3)",
-              transform: "translateX(-50%)",
-            }} />
-          ))}
+          <TypeWriter
+            text='"Try MindBridge."'
+            visible={scene === 2}
+            delay={1200}
+            speed={60}
+            style={{ color: "var(--primary)", fontSize: window.innerWidth < 768 ? "18px" : "24px", fontWeight: "bold" }}
+          />
         </div>
-
-        <div style={{
-          marginTop: "32px",
-          width: "100%", maxWidth: "420px",
-          display: "flex", flexDirection: "column", gap: "6px",
-          fontFamily: "'Courier New',monospace", fontSize: "11px",
-          textAlign: "left",
-        }}>
-          {lines.map((line, i) => (
-            <div key={i} style={{
-              display: "flex", gap: "14px", alignItems: "center",
-              opacity: textStep > i ? 1 : 0,
-              transform: textStep > i ? "translateX(0)" : "translateX(-10px)",
-              transition: "opacity 0.5s ease, transform 0.5s ease",
-            }}>
-              <span style={{ color: "rgba(56,184,248,0.35)", flexShrink: 0, fontSize: "10px" }}>
-                {`0${i + 1}`}
-              </span>
-              <span style={{
-                color: i === lines.length - 1 && textStep > i
-                  ? "rgba(144,216,255,0.9)"
-                  : "rgba(56,184,248,0.5)",
-                letterSpacing: "0.12em",
-                fontWeight: i === lines.length - 1 ? "bold" : "normal",
-              }}>
-                {line.text}
-              </span>
-              {textStep > i && (
-                <span style={{
-                  color: "rgba(56,184,248,0.6)", fontSize: "10px",
-                  marginLeft: "auto",
-                }}>
-                  {i < lines.length - 1 ? "✓" : "▶"}
-                </span>
-              )}
-            </div>
-          ))}
-          {textStep < lines.length && (
-            <div style={{
-              color: "rgba(56,184,248,0.6)", fontSize: "13px",
-              animation: "blink 0.8s step-end infinite",
-              marginTop: "4px", marginLeft: "24px",
-            }}>_</div>
-          )}
-        </div>
-
-        <button
-          onClick={() => { setFadeOut(true); setTimeout(() => { if (onComplete) onComplete(); }, 800); }}
-          style={{
-            marginTop: "40px",
-            fontFamily: "'Courier New',monospace", fontSize: "10px",
-            color: "rgba(56,184,248,0.25)", letterSpacing: "0.22em",
-            textTransform: "uppercase", background: "none", border: "none",
-            cursor: "pointer", transition: "opacity 0.5s ease, color 0.25s ease",
-            opacity: textStep >= 2 ? 1 : 0,
-          }}
-          onMouseEnter={e => e.currentTarget.style.color = "rgba(56,184,248,0.65)"}
-          onMouseLeave={e => e.currentTarget.style.color = "rgba(56,184,248,0.25)"}
-        >
-          [ SKIP TRANSMISSION ]
-        </button>
       </div>
 
-      <div style={{
-        position: "absolute", bottom: "36px", left: "50%", transform: "translateX(-50%)",
-        fontFamily: "'Courier New',monospace", fontSize: "9px",
-        color: "rgba(26,127,196,0.3)", letterSpacing: "0.2em",
-        zIndex: 5, whiteSpace: "nowrap",
-        opacity: textStep >= 1 ? 1 : 0, transition: "opacity 0.6s ease",
-      }}>
-        {`LAT: 28.9465°N  ·  LON: 74.6196°E  ·  ALT: 1.2AU  ·  VEL: 0.00c`}
-      </div>
+      <OrganizedGrid visible={scene === 2} />
+
+      <LogoReveal visible={scene === 3} />
 
       <div style={{
-        position: "absolute", left: "36px", top: "50%", transform: "translateY(-50%) rotate(-90deg)",
-        fontFamily: "'Courier New',monospace", fontSize: "8px",
-        color: "rgba(26,127,196,0.2)", letterSpacing: "0.25em",
-        zIndex: 5, transformOrigin: "center center",
-        opacity: textStep >= 1 ? 1 : 0, transition: "opacity 0.6s ease",
+        position: "absolute", bottom: "28px", left: "50%", transform: "translateX(-50%)",
+        fontFamily: "'JetBrains Mono', monospace", fontSize: "10px",
+        color: "rgba(0,255,157,0.2)", letterSpacing: "3px", zIndex: 15,
       }}>
-        ENDURANCE · MISSION LOG · 2067.204
-      </div>
-      <div style={{
-        position: "absolute", right: "36px", top: "50%", transform: "translateY(-50%) rotate(90deg)",
-        fontFamily: "'Courier New',monospace", fontSize: "8px",
-        color: "rgba(26,127,196,0.2)", letterSpacing: "0.25em",
-        zIndex: 5, transformOrigin: "center center",
-        opacity: textStep >= 1 ? 1 : 0, transition: "opacity 0.6s ease",
-      }}>
-        SYSTEM STATUS · NOMINAL · SYNC ACTIVE
+        {scene === 1 && "SCENE_01 // THE_STRUGGLE"}
+        {scene === 2 && "SCENE_02 // THE_REVELATION"}
+        {scene === 3 && "INITIALIZING PROTOCOL // v1.0.0"}
       </div>
     </div>
   );

@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
 import '../services/appwrite_service.dart';
 import '../services/auth_service.dart';
 
@@ -79,68 +84,93 @@ class _NoteCardState extends State<NoteCard> {
   }
 
   Future<void> _openFile() async {
-    final url = widget.fileUrl;
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    await _downloadNote(context);
   }
 
   Future<void> _downloadNote(BuildContext context) async {
+    debugPrint('Download triggered for: ${widget.title}');
     try {
-      final url = widget.fileUrl;
-      final uri = Uri.parse(url);
-      
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        
-        final prefs = await SharedPreferences.getInstance();
-        final userId = AuthService().currentUser?.uid ?? 'anonymous';
-        final storageKey = 'downloaded_notes_$userId';
-        final downloadsJson = prefs.getStringList(storageKey) ?? [];
-        
-        bool alreadyDownloaded = false;
-        for (final item in downloadsJson) {
-          try {
-            final data = jsonDecode(item);
-            if (data['id'] == widget.noteId) {
-              alreadyDownloaded = true;
-              break;
-            }
-          } catch (_) {}
-        }
-
-        if (!alreadyDownloaded) {
-          final noteData = {
-            'id': widget.noteId,
-            'title': widget.title,
-            'subject': widget.subject,
-            'fileType': widget.fileType,
-            'fileUrl': widget.fileUrl,
-            'uploaderName': widget.uploadedBy,
-            'downloadedAt': DateTime.now().toIso8601String(),
-          };
-          
-          downloadsJson.add(jsonEncode(noteData));
-          await prefs.setStringList(storageKey, downloadsJson);
-        }
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Opening download link...',
-                style: TextStyle(color: Colors.black),
-              ),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: const Color(0xFFCCFF00),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      } else {
-        throw 'Could not launch $url';
+      if (Platform.isAndroid) {
+        await Permission.storage.request();
       }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Downloading ${widget.title}...', style: const TextStyle(color: Colors.black)),
+            backgroundColor: const Color(0xFFCCFF00),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      final url = widget.fileUrl;
+      String fileId = '';
+      final fileIdMatch = RegExp(r'/files/([^/]+)/').firstMatch(url);
+      if (fileIdMatch != null) {
+        fileId = fileIdMatch.group(1)!;
+      } else {
+        fileId = widget.noteId; 
+      }
+      
+      debugPrint('Extracting fileId: $fileId from URL: $url');
+
+      final fileName = '${widget.title.replaceAll(RegExp(r'[^\w\s-]'), '')}_${DateTime.now().millisecondsSinceEpoch}.${widget.fileType.toLowerCase()}';
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath = '${directory.path}/$fileName';
+
+      final response = await AppwriteService().storage.getFileView(
+        bucketId: AppwriteService.storageBucketId,
+        fileId: fileId,
+      );
+      
+      final file = File(filePath);
+      await file.writeAsBytes(response);
+      
+      debugPrint('Download complete. Opening file at: $filePath');
+      final result = await OpenFilex.open(filePath);
+      debugPrint('Open file result: ${result.type}');
+      
+      if (result.type != ResultType.done && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening file: ${result.message}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final userId = AuthService().currentUser?.uid ?? 'anonymous';
+      final storageKey = 'downloaded_notes_$userId';
+      final downloadsJson = prefs.getStringList(storageKey) ?? [];
+      
+      bool alreadyDownloaded = false;
+      for (final item in downloadsJson) {
+        try {
+          final data = jsonDecode(item);
+          if (data['id'] == widget.noteId) {
+            alreadyDownloaded = true;
+            break;
+          }
+        } catch (_) {}
+      }
+
+      if (!alreadyDownloaded) {
+        final noteData = {
+          'id': widget.noteId,
+          'title': widget.title,
+          'subject': widget.subject,
+          'fileType': widget.fileType,
+          'fileUrl': widget.fileUrl,
+          'uploaderName': widget.uploadedBy,
+          'downloadedAt': DateTime.now().toIso8601String(),
+        };
+        
+        downloadsJson.add(jsonEncode(noteData));
+        await prefs.setStringList(storageKey, downloadsJson);
+      }
+
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

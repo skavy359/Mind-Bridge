@@ -1,10 +1,18 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart' as models;
 import 'dart:io';
 import '../../services/auth_service.dart';
+import '../../services/appwrite_service.dart';
 import '../auth/login_screen.dart';
+import '../notes/notes_screen.dart';
+import '../../widgets/note_card.dart';
+import '../../providers/theme_provider.dart';
+import '../opportunities/opportunities_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -34,24 +42,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final user = _authService.currentUser;
       if (user == null) throw 'User not logged in';
 
-      final bytes = await File(pickedFile.path).readAsBytes();
-
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('profiles/${user.uid}/profile.jpg');
-
-      await storageRef.putData(
-        bytes,
-        SettableMetadata(contentType: 'image/jpeg'),
+      final bytes = await pickedFile.readAsBytes();
+      
+      final uploadedFile = await AppwriteService().storage.createFile(
+        bucketId: AppwriteService.storageBucketId,
+        fileId: ID.unique(),
+        file: InputFile.fromBytes(
+          bytes: bytes.toList(),
+          filename: 'profile_${user.uid}.jpg',
+        ),
+        permissions: [
+          Permission.read(Role.any()),
+        ],
       );
-      final photoUrl = await storageRef.getDownloadURL();
 
-      await user.updatePhotoURL(photoUrl);
+      final photoUrl = '${AppwriteService.endpoint}/storage/buckets/${AppwriteService.storageBucketId}/files/${uploadedFile.$id}/view?project=${AppwriteService.projectId}';
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update({'photoUrl': photoUrl});
+      await AppwriteService().account.updatePrefs(
+        prefs: {'photoUrl': photoUrl},
+      );
+
+      await _authService.refreshUser();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -120,14 +131,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = _authService.currentUser;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (user == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Column(
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 child: Row(
@@ -170,24 +184,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
 
-              // Profile Card
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF233169), Color(0xFF4A5899)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: Theme.of(context).colorScheme.secondary,
                     borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isDark ? Colors.white : Colors.black,
+                      width: 2.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF233169).withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                        color: isDark ? Colors.white : Colors.black,
+                        offset: const Offset(6, 6),
                       ),
                     ],
                   ),
@@ -251,34 +263,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ),
                             ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Colors.white, Color(0xFFF0F0F0)],
-                                ),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: IconButton(
-                                icon: Icon(
-                                  Icons.camera_alt_rounded,
-                                  size: 20,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                onPressed: _isUpdatingPhoto ? null : _updateProfilePhoto,
-                                padding: const EdgeInsets.all(10),
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -320,7 +304,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Options
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
@@ -342,17 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       gradient: const LinearGradient(
                         colors: [Color(0xFFFF7A5C), Color(0xFFE65C3B)],
                       ),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Feature coming soon!'),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        );
-                      },
+                      onTap: () => _showSavedOpportunities(context),
                     ),
                     const SizedBox(height: 10),
                     _ProfileOption(
@@ -362,17 +335,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       gradient: const LinearGradient(
                         colors: [Color(0xFF10B981), Color(0xFF059669)],
                       ),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Feature coming soon!'),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        );
-                      },
+                      onTap: () => _showDownloads(context),
                     ),
                     const SizedBox(height: 10),
                     _ProfileOption(
@@ -382,17 +345,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       gradient: const LinearGradient(
                         colors: [Color(0xFFA855F7), Color(0xFF8B44D9)],
                       ),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Feature coming soon!'),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        );
-                      },
+                      onTap: () => _showSettings(context),
                     ),
                     const SizedBox(height: 10),
                     _ProfileOption(
@@ -468,7 +421,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showMyNotes(BuildContext context) {
-    final userId = _authService.currentUser?.uid;
+    final user = _authService.currentUser;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
@@ -525,22 +478,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('notes')
-                      .where('uploadedBy', isEqualTo: userId)
-                      .orderBy('uploadedAt', descending: true)
-                      .snapshots(),
+                child: FutureBuilder<models.DocumentList>(
+                  future: AppwriteService().databases.listDocuments(
+                    databaseId: AppwriteService.databaseId,
+                    collectionId: AppwriteService.notesCollectionId,
+                    queries: [
+                      Query.equal('uploadedBy', user?.uid),
+                      Query.orderDesc('uploadedAt'),
+                    ],
+                  ),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
-                        child: CircularProgressIndicator(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      );
+                      return const Center(child: CircularProgressIndicator());
                     }
 
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    if (snapshot.hasError || !snapshot.hasData || snapshot.data!.documents.isEmpty) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -579,102 +531,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
                     }
 
-                    final notes = snapshot.data!.docs;
-
+                    final notes = snapshot.data!.documents;
                     return ListView.builder(
                       controller: scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       itemCount: notes.length,
                       itemBuilder: (context, index) {
-                        final note = notes[index].data() as Map<String, dynamic>;
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardTheme.color,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isDark
-                                  ? Colors.white.withOpacity(0.05)
-                                  : Colors.grey.withOpacity(0.1),
-                            ),
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            leading: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEF4444).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(
-                                Icons.picture_as_pdf_rounded,
-                                color: Color(0xFFEF4444),
-                                size: 24,
-                              ),
-                            ),
-                            title: Text(
-                              note['title'] ?? 'Untitled',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : const Color(0xFF1A1A1A),
-                              ),
-                            ),
-                            subtitle: Text(
-                              note['subject'] ?? 'General',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_rounded, color: Colors.red, size: 22),
-                              onPressed: () async {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    title: const Text('Delete Note'),
-                                    content: const Text('Are you sure?'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context, false),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      FilledButton(
-                                        onPressed: () => Navigator.pop(context, true),
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: Colors.red,
-                                        ),
-                                        child: const Text('Delete'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-
-                                if (confirm == true) {
-                                  await FirebaseFirestore.instance
-                                      .collection('notes')
-                                      .doc(notes[index].id)
-                                      .delete();
-
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text('Note deleted'),
-                                        behavior: SnackBarBehavior.floating,
-                                        backgroundColor: Colors.green,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                            ),
-                          ),
+                        final note = notes[index];
+                        return NoteCard(
+                          noteId: note.$id,
+                          title: note.data['title'] ?? 'Untitled',
+                          subject: note.data['subject'] ?? 'General',
+                          fileType: note.data['fileType'] ?? 'pdf',
+                          fileUrl: note.data['fileUrl'] ?? '',
+                          uploadedBy: note.data['uploaderName'] ?? 'You',
+                          uploadedAt: DateTime.tryParse(note.data['uploadedAt'] ?? ''),
+                          isOwner: true,
                         );
                       },
                     );
@@ -685,6 +557,380 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showSavedOpportunities(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) => Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF7A5C).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.bookmark_rounded,
+                            color: Color(0xFFFF7A5C),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Saved Opportunities',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                          ),
+                        ),
+                      ],
+                    ),
+                    TextButton.icon(
+                      icon: const Icon(Icons.delete_sweep_rounded, size: 18),
+                      label: const Text('Clear'),
+                      onPressed: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        final userId = _authService.currentUser?.uid ?? 'anonymous';
+                        await prefs.remove('saved_opportunities_$userId');
+                        if (context.mounted) Navigator.pop(context);
+                      },
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: FutureBuilder<List<String>>(
+                  future: SharedPreferences.getInstance().then((p) {
+                    final userId = _authService.currentUser?.uid ?? 'anonymous';
+                    return p.getStringList('saved_opportunities_$userId') ?? [];
+                  }),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.bookmark_border_rounded, 
+                                 size: 64, color: Colors.grey.withOpacity(0.5)),
+                            const SizedBox(height: 16),
+                            const Text('No saved opportunities yet', 
+                                       style: TextStyle(color: Colors.grey, fontSize: 16)),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final saved = snapshot.data!.reversed.toList();
+                    return ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: saved.length,
+                      itemBuilder: (context, index) {
+                        try {
+                          final data = jsonDecode(saved[index]);
+                          return OpportunityCard(
+                            title: data['title'] ?? 'Untitled',
+                            company: data['company'] ?? 'Unknown',
+                            type: data['type'] ?? 'internship',
+                            location: data['location'] ?? 'Remote',
+                            description: data['description'] ?? '',
+                            deadline: DateTime.tryParse(data['deadline'] ?? ''),
+                            applyLink: data['applyLink'] ?? '',
+                            postedAt: DateTime.tryParse(data['postedAt'] ?? ''),
+                          );
+                        } catch (e) {
+                          return const SizedBox.shrink();
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDownloads(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) => Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.download_rounded,
+                            color: Color(0xFF10B981),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Downloads',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                          ),
+                        ),
+                      ],
+                    ),
+                    TextButton.icon(
+                      icon: const Icon(Icons.delete_sweep_rounded, size: 18),
+                      label: const Text('Clear'),
+                      onPressed: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        final userId = AuthService().currentUser?.uid ?? 'anonymous';
+                        await prefs.remove('downloaded_notes_$userId');
+                        if (context.mounted) Navigator.pop(context);
+                      },
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: FutureBuilder<List<String>>(
+                  future: SharedPreferences.getInstance().then((p) {
+                    final userId = AuthService().currentUser?.uid ?? 'anonymous';
+                    return p.getStringList('downloaded_notes_$userId') ?? [];
+                  }),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.download_for_offline_outlined, 
+                                 size: 64, color: Colors.grey.withOpacity(0.5)),
+                            const SizedBox(height: 16),
+                            const Text('No downloads yet', 
+                                       style: TextStyle(color: Colors.grey, fontSize: 16)),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final downloads = snapshot.data!.reversed.toList();
+                    return ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: downloads.length,
+                      itemBuilder: (context, index) {
+                        try {
+                          final data = jsonDecode(downloads[index]);
+                          return NoteCard(
+                            noteId: data['id'] ?? '',
+                            title: data['title'] ?? 'Untitled',
+                            subject: data['subject'] ?? 'General',
+                            fileType: data['fileType'] ?? 'pdf',
+                            fileUrl: data['fileUrl'] ?? '',
+                            uploadedBy: data['uploaderName'] ?? 'Unknown',
+                            uploadedAt: DateTime.tryParse(data['downloadedAt'] ?? ''),
+                            isOwner: false,
+                            onDelete: () => setState(() {}),
+                          );
+                        } catch (e) {
+                          return const SizedBox.shrink();
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSettings(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Settings',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Appearance',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            _ThemeOption(
+              title: 'System Default',
+              icon: Icons.brightness_auto_rounded,
+              selected: themeProvider.themeMode == ThemeMode.system,
+              onTap: () {
+                themeProvider.setThemeMode(ThemeMode.system);
+                Navigator.pop(context);
+              },
+            ),
+            _ThemeOption(
+              title: 'Light Mode',
+              icon: Icons.light_mode_rounded,
+              selected: themeProvider.themeMode == ThemeMode.light,
+              onTap: () {
+                themeProvider.setThemeMode(ThemeMode.light);
+                Navigator.pop(context);
+              },
+            ),
+            _ThemeOption(
+              title: 'Dark Mode',
+              icon: Icons.dark_mode_rounded,
+              selected: themeProvider.themeMode == ThemeMode.dark,
+              onTap: () {
+                themeProvider.setThemeMode(ThemeMode.dark);
+                Navigator.pop(context);
+              },
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Account',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              onTap: () {
+                Navigator.pop(context);
+                _updateProfilePhoto();
+              },
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.camera_alt_rounded, color: Theme.of(context).colorScheme.primary),
+              ),
+              title: const Text('Change Profile Picture'),
+              subtitle: const Text('Update your avatar'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.title,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return ListTile(
+      onTap: onTap,
+      leading: Icon(icon, color: selected ? Theme.of(context).colorScheme.primary : (isDark ? Colors.white38 : Colors.grey)),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          color: selected ? Theme.of(context).colorScheme.primary : (isDark ? Colors.white : Colors.black),
+        ),
+      ),
+      trailing: selected 
+        ? Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary)
+        : null,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }
@@ -731,15 +977,13 @@ class _ProfileOptionState extends State<_ProfileOption> {
             color: Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark
-                  ? Colors.white.withOpacity(0.05)
-                  : Colors.grey.withOpacity(0.1),
+              color: isDark ? Colors.white : Colors.black,
+              width: 2.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: isDark ? Colors.white : Colors.black,
+                offset: const Offset(4, 4),
               ),
             ],
           ),
@@ -782,7 +1026,7 @@ class _ProfileOptionState extends State<_ProfileOption> {
                       widget.subtitle,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: isDark ? Colors.white70 : Colors.black54,
                       ),
                     ),
                   ],
@@ -790,7 +1034,7 @@ class _ProfileOptionState extends State<_ProfileOption> {
               ),
               Icon(
                 Icons.chevron_right_rounded,
-                color: Colors.grey[400],
+                color: isDark ? Colors.white38 : Colors.grey[400],
                 size: 24,
               ),
             ],

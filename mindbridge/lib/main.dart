@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/theme_provider.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/home/dashboard_screen.dart';
 import 'services/auth_service.dart';
+import 'screens/splash_screen.dart';
+import 'screens/auth_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
 
   final prefs = await SharedPreferences.getInstance();
   final isDarkMode = prefs.getBool('isDarkMode') ?? false;
@@ -35,180 +34,108 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.light,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF233169),
-              brightness: Brightness.light,
-              primary: const Color(0xFF233169),
-              secondary: const Color(0xFF4A5899),
+            textTheme: GoogleFonts.spaceGroteskTextTheme(ThemeData.light().textTheme),
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF000000),
+              secondary: Color(0xFFCCFF00),
+              surface: Color(0xFFF0F0F0),
             ),
-            scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+            scaffoldBackgroundColor: const Color(0xFFF0F0F0),
             cardTheme: CardThemeData(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Colors.black, width: 2.5),
               ),
               color: Colors.white,
-              shadowColor: Colors.black.withOpacity(0.05),
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
+                  side: const BorderSide(color: Colors.black, width: 2.5),
                 ),
-                backgroundColor: const Color(0xFF233169),
-                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFFCCFF00),
+                foregroundColor: Colors.black,
               ),
             ),
             inputDecorationTheme: InputDecorationTheme(
               filled: true,
-              fillColor: Colors.grey[50],
+              fillColor: Colors.white,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.black, width: 2.5),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.black, width: 2.5),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF233169), width: 2),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.black, width: 4),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            ),
-            appBarTheme: const AppBarTheme(
-              centerTitle: false,
-              elevation: 0,
-              backgroundColor: Color(0xFFF8F9FA),
-              foregroundColor: Color(0xFF1A1A1A),
-              titleTextStyle: TextStyle(
-                color: Color(0xFF1A1A1A),
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            chipTheme: ChipThemeData(
-              backgroundColor: const Color(0xFF233169).withOpacity(0.1),
-              labelStyle: const TextStyle(color: Color(0xFF233169)),
-              side: BorderSide.none,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
             ),
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF233169),
-              brightness: Brightness.dark,
-              primary: const Color(0xFF5A6BB0),
-              secondary: const Color(0xFF7A8BD0),
+            textTheme: GoogleFonts.spaceGroteskTextTheme(ThemeData.dark().textTheme),
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFFFFFFF),
+              secondary: Color(0xFFFF00A0),
+              surface: Color(0xFF111111),
             ),
-            scaffoldBackgroundColor: const Color(0xFF0F1419),
+            scaffoldBackgroundColor: const Color(0xFF111111),
             cardTheme: CardThemeData(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Colors.white, width: 2.5),
               ),
-              color: const Color(0xFF1A1F2E),
-              shadowColor: Colors.white.withOpacity(0.03),
+              color: const Color(0xFF222222),
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
+                  side: const BorderSide(color: Colors.white, width: 2.5),
                 ),
-                backgroundColor: const Color(0xFF5A6BB0),
+                backgroundColor: const Color(0xFFFF00A0),
                 foregroundColor: Colors.white,
               ),
             ),
             inputDecorationTheme: InputDecorationTheme(
               filled: true,
-              fillColor: const Color(0xFF1A1F2E),
+              fillColor: const Color(0xFF222222),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF2A2F3E)),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.white, width: 2.5),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF2A2F3E)),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.white, width: 2.5),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF5A6BB0), width: 2),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.white, width: 4),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
-            appBarTheme: const AppBarTheme(
-              centerTitle: false,
-              elevation: 0,
-              backgroundColor: Color(0xFF0F1419),
-              foregroundColor: Colors.white,
-              titleTextStyle: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            chipTheme: ChipThemeData(
-              backgroundColor: const Color(0xFF5A6BB0).withOpacity(0.2),
-              labelStyle: const TextStyle(color: Color(0xFF9DADD9)),
-              side: BorderSide.none,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+            dialogBackgroundColor: const Color(0xFF111111),
+            dialogTheme: DialogThemeData(
+              backgroundColor: const Color(0xFF111111),
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
           ),
-          themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          home: const AuthWrapper(),
+          themeMode: themeProvider.themeMode,
+          home: const SplashScreen(),
         );
-      },
-    );
-  }
-}
-
-class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final authService = AuthService();
-
-    return StreamBuilder(
-      stream: authService.authStateChanges,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.psychology_rounded,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 24),
-                  CircularProgressIndicator(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        if (snapshot.hasData) {
-          return const DashboardScreen();
-        }
-
-        return const LoginScreen();
       },
     );
   }

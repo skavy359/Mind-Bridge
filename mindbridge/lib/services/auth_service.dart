@@ -1,122 +1,136 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/enums.dart';
+import 'package:appwrite/models.dart' as models;
+import 'appwrite_service.dart';
+
+class User {
+  final String uid;
+  final String email;
+  final String displayName;
+  final String? photoURL;
+  User({required this.uid, required this.email, required this.displayName, this.photoURL});
+}
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final AuthService _instance = AuthService._internal();
+  factory AuthService() => _instance;
 
-  User? get currentUser => _auth.currentUser;
+  final Account _account = AppwriteService().account;
+  
+  final StreamController<User?> _authStateController = StreamController<User?>.broadcast();
+  User? _currentUser;
 
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  Future<UserCredential?> signUpWithEmail(
-      String email,
-      String password,
-      String name,
-      ) async {
-    try {
-      final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      await credential.user?.updateDisplayName(name);
-
-      await _firestore.collection('users').doc(credential.user!.uid).set({
-        'uid': credential.user!.uid,
-        'email': email,
-        'displayName': name,
-        'photoUrl': null,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      return credential;
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    }
+  AuthService._internal() {
+    _checkAuthStatus();
   }
 
-  Future<UserCredential?> signInWithEmail(
-      String email,
-      String password,
-      ) async {
-    try {
-      final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return credential;
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    }
+  User? get currentUser => _currentUser;
+
+  Stream<User?> get authStateChanges async* {
+    yield _currentUser;
+    yield* _authStateController.stream;
   }
 
-  Future<UserCredential?> signInWithGoogle() async {
+  Future<void> refreshUser() async {
+    await _checkAuthStatus();
+  }
+
+  Future<void> _checkAuthStatus() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
-      if (googleUser == null) {
-        return null; // User cancelled
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-      await googleUser.authentication;
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await _auth.signInWithCredential(credential);
-
-      await _firestore
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .set({
-        'uid': userCredential.user!.uid,
-        'email': userCredential.user!.email,
-        'displayName': userCredential.user!.displayName,
-        'photoUrl': userCredential.user!.photoURL,
-        'lastLogin': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      return userCredential;
+      final user = await _account.get();
+      _updateUserState(user);
     } catch (e) {
-      throw 'Google Sign-In failed: $e';
+      _updateUserState(null);
+    }
+  }
+
+  void _updateUserState(models.User? appwriteUser) {
+    if (appwriteUser == null) {
+      _currentUser = null;
+      print('AuthService: User is null (logged out)');
+    } else {
+      _currentUser = User(
+        uid: appwriteUser.$id,
+        email: appwriteUser.email,
+        displayName: appwriteUser.name,
+        photoURL: appwriteUser.prefs.data['photoUrl'],
+      );
+      print('AuthService: User logged in: ${_currentUser?.email}');
+    }
+    _authStateController.add(_currentUser);
+    print('AuthService: Auth state emitted to stream');
+  }
+
+  Future<dynamic> signUpWithEmail(String email, String password, String name) async {
+    try {
+      final user = await _account.create(
+        userId: ID.unique(),
+        email: email,
+        password: password,
+        name: name,
+      );
+      
+      await signInWithEmail(email, password);
+      
+      await _account.updatePrefs(prefs: {'photoUrl': null});
+      
+      return user;
+    } on AppwriteException catch (e) {
+      throw e.message ?? 'An error occurred during sign up';
+    }
+  }
+
+  Future<dynamic> signInWithEmail(String email, String password) async {
+    try {
+      try {
+        await _account.deleteSession(sessionId: 'current');
+      } catch (_) {}
+
+      await _account.createEmailPasswordSession(
+        email: email,
+        password: password,
+      );
+      await _checkAuthStatus();
+      return true;
+    } on AppwriteException catch (e) {
+      throw e.message ?? 'An error occurred during sign in';
+    }
+  }
+
+  Future<dynamic> signInWithGoogle() async {
+    try {
+      try {
+        await _account.deleteSession(sessionId: 'current');
+      } catch (_) {}
+
+      await _account.createOAuth2Session(
+        provider: OAuthProvider.google,
+      );
+      await _checkAuthStatus();
+      return true;
+    } on AppwriteException catch (e) {
+      throw 'Google Sign-In failed: ${e.message}';
     }
   }
 
   Future<void> signOut() async {
-    await Future.wait([
-      _auth.signOut(),
-      _googleSignIn.signOut(),
-    ]);
-  }
-
-  String _handleAuthException(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'weak-password':
-        return 'The password is too weak.';
-      case 'email-already-in-use':
-        return 'An account already exists with this email.';
-      case 'invalid-email':
-        return 'The email address is invalid.';
-      case 'user-not-found':
-        return 'No user found with this email.';
-      case 'wrong-password':
-        return 'Wrong password provided.';
-      default:
-        return 'An error occurred: ${e.message}';
+    try {
+      await _account.deleteSession(sessionId: 'current');
+      _updateUserState(null);
+    } catch (e) {
+      print('Sign out error: $e');
     }
   }
 
   Future<void> resetPassword(String email) async {
     try {
-      await _auth.sendPasswordResetEmail(email: email);
-    } catch (e) {
-      throw 'Failed to send password reset email: $e';
+      await _account.createRecovery(
+        email: email,
+        url: 'https://mindbridge.app/reset-password',
+      );
+    } on AppwriteException catch (e) {
+      throw e.message ?? 'Failed to send password reset email';
     }
   }
 }

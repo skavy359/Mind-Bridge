@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:appwrite/appwrite.dart';
 import '../../services/auth_service.dart';
+import '../../services/appwrite_service.dart';
+import '../../widgets/glass_background.dart';
 
 class UploadNoteScreen extends StatefulWidget {
   const UploadNoteScreen({Key? key}) : super(key: key);
@@ -17,10 +18,11 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _authService = AuthService();
+  final _appwrite = AppwriteService();
 
   String? _selectedSubject;
-  File? _selectedFile;
   String? _fileName;
+  PlatformFile? _pickedFile;
   bool _isUploading = false;
   double _uploadProgress = 0.0;
 
@@ -49,49 +51,37 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        withData: true, 
       );
 
-      if (result != null) {
+      if (result != null && result.files.single.bytes != null) {
         setState(() {
-          _selectedFile = File(result.files.single.path!);
+          _pickedFile = result.files.single;
           _fileName = result.files.single.name;
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error picking file: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking file: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   String _getFileExtension(String fileName) {
-    return fileName.split('.').last.toLowerCase();
-  }
-
-  String _getContentType(String extension) {
-    switch (extension.toLowerCase()) {
-      case 'pdf':
-        return 'application/pdf';
-      case 'doc':
-        return 'application/msword';
-      case 'docx':
-        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'png':
-        return 'image/png';
-      default:
-        return 'application/octet-stream';
-    }
+    if (!fileName.contains('.')) return 'bin';
+    final parts = fileName.split('.');
+    if (parts.length < 2) return 'bin';
+    return parts.last.toLowerCase();
   }
 
   Future<void> _uploadNote() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedFile == null) {
+    if (_pickedFile == null || _pickedFile!.bytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select a file to upload'),
@@ -101,58 +91,61 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
       return;
     }
 
-    setState(() => _isUploading = true);
+    setState(() {
+      _isUploading = true;
+      _uploadProgress = 0.1; 
+    });
 
     try {
       final user = _authService.currentUser;
       if (user == null) throw 'User not logged in';
 
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileExtension = _getFileExtension(_fileName!);
-      final storagePath = 'notes/${user.uid}/$timestamp.$fileExtension';
-
-      final bytes = await _selectedFile!.readAsBytes();
-
-      final storageRef = FirebaseStorage.instance.ref().child(storagePath);
-      final uploadTask = storageRef.putData(
-        bytes,
-        SettableMetadata(
-          contentType: _getContentType(fileExtension),
+      final fileId = ID.unique();
+      final uploadedFile = await _appwrite.storage.createFile(
+        bucketId: AppwriteService.storageBucketId,
+        fileId: fileId,
+        file: InputFile.fromBytes(
+          bytes: _pickedFile!.bytes!.toList(),
+          filename: _fileName!,
         ),
       );
-      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-        if (mounted) {
-          setState(() {
-            _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
-          });
-        }
-      });
+      
+      setState(() => _uploadProgress = 0.5);
 
-      final snapshot = await uploadTask;
+      final fileUrl = '${AppwriteService.endpoint}/storage/buckets/${AppwriteService.storageBucketId}/files/${uploadedFile.$id}/view?project=${AppwriteService.projectId}';
 
-      final downloadUrl = await snapshot.ref.getDownloadURL();
+      await _appwrite.databases.createDocument(
+        databaseId: AppwriteService.databaseId,
+        collectionId: AppwriteService.notesCollectionId,
+        documentId: ID.unique(),
+        data: {
+          'title': _titleController.text,
+          'subject': _selectedSubject,
+          'fileUrl': fileUrl,
+          'fileType': _getFileExtension(_fileName!),
+          'uploadedBy': user.uid,
+          'uploaderName': user.displayName,
+          'uploadedAt': DateTime.now().toIso8601String(),
+        },
+      );
 
-      await FirebaseFirestore.instance.collection('notes').add({
-        'title': _titleController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'subject': _selectedSubject,
-        'fileUrl': downloadUrl,
-        'fileType': fileExtension,
-        'fileName': _fileName,
-        'uploadedBy': user.uid,
-        'uploaderName': user.displayName ?? 'Anonymous',
-        'uploadedAt': FieldValue.serverTimestamp(),
-        'downloads': 0,
-      });
+      setState(() => _uploadProgress = 1.0);
 
       if (mounted) {
-        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Note uploaded successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text(
+              'Note uploaded successfully!',
+              style: TextStyle(color: Colors.black),
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFFCCFF00),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
+        Navigator.pop(context, true); 
       }
     } catch (e) {
       if (mounted) {
@@ -175,180 +168,147 @@ class _UploadNoteScreenState extends State<UploadNoteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF111111) : const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text('Upload Note'),
+        title: Text(
+          'Upload Note',
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // File picker section
-              GestureDetector(
-                onTap: _isUploading ? null : _pickFile,
-                child: Container(
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outline,
-                      width: 2,
-                      style: BorderStyle.solid,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _selectedFile != null
-                            ? Icons.check_circle
-                            : Icons.cloud_upload,
-                        size: 48,
-                        color: _selectedFile != null
-                            ? Colors.green
-                            : Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _selectedFile != null
-                            ? _fileName!
-                            : 'Tap to select file',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'PDF, DOC, DOCX, JPG, PNG',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+      body: GlassBackground(
+        showBlobs: isDark,
+        child: Container(
+          color: isDark ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.4),
+          height: double.infinity,
+          width: double.infinity,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  GestureDetector(
+                    onTap: _isUploading ? null : _pickFile,
+                    child: Container(
+                      height: 150,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF0F0F0),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? Colors.white : Colors.black,
+                          width: 2.5,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              TextFormField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: 'Title',
-                  hintText: 'e.g., Data Structures Notes',
-                  prefixIcon: const Icon(Icons.title),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              DropdownButtonFormField<String>(
-                value: _selectedSubject,
-                decoration: InputDecoration(
-                  labelText: 'Subject',
-                  prefixIcon: const Icon(Icons.book),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                items: _subjects.map((subject) {
-                  return DropdownMenuItem(
-                    value: subject,
-                    child: Text(subject),
-                  );
-                }).toList(),
-                onChanged: _isUploading
-                    ? null
-                    : (value) {
-                  setState(() => _selectedSubject = value);
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Please select a subject';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  labelText: 'Description (Optional)',
-                  hintText: 'Brief description of the content',
-                  prefixIcon: const Icon(Icons.description),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  alignLabelWithHint: true,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              if (_isUploading) ...[
-                LinearProgressIndicator(
-                  value: _uploadProgress,
-                  minHeight: 8,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${(_uploadProgress * 100).toStringAsFixed(0)}% uploaded',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              ElevatedButton(
-                onPressed: _isUploading ? null : _uploadNote,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _isUploading
-                    ? const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _pickedFile != null ? Icons.check_circle : Icons.cloud_upload,
+                            size: 48,
+                            color: _pickedFile != null ? Colors.green : Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _pickedFile != null ? _fileName! : 'Tap to select file',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'PDF, DOC, DOCX, JPG, PNG',
+                            style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black54),
+                          ),
+                        ],
+                      ),
                     ),
-                    SizedBox(width: 12),
-                    Text('Uploading...'),
+                  ),
+                  const SizedBox(height: 24),
+
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: InputDecoration(
+                      labelText: 'Title',
+                      hintText: 'e.g., Data Structures Notes',
+                      prefixIcon: const Icon(Icons.title),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (value) => value == null || value.isEmpty ? 'Please enter a title' : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  DropdownButtonFormField<String>(
+                    value: _selectedSubject,
+                    decoration: InputDecoration(
+                      labelText: 'Subject',
+                      prefixIcon: const Icon(Icons.book),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    items: _subjects.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: _isUploading ? null : (v) => setState(() => _selectedSubject = v),
+                    validator: (v) => v == null ? 'Please select a subject' : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  TextFormField(
+                    controller: _descriptionController,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      labelText: 'Description (Optional)',
+                      hintText: 'Brief description of the content',
+                      prefixIcon: const Icon(Icons.description),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  if (_isUploading) ...[
+                    LinearProgressIndicator(value: _uploadProgress, minHeight: 8, borderRadius: BorderRadius.circular(4)),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${(_uploadProgress * 100).toStringAsFixed(0)}% uploaded',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12),
+                    ),
+                    const SizedBox(height: 16),
                   ],
-                )
-                    : const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.cloud_upload),
-                    SizedBox(width: 8),
-                    Text('Upload Note'),
-                  ],
-                ),
+
+                  ElevatedButton(
+                    onPressed: _isUploading ? null : _uploadNote,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: _isUploading
+                        ? const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                              SizedBox(width: 12),
+                              Text('Uploading...'),
+                            ],
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.cloud_upload),
+                              SizedBox(width: 8),
+                              Text('Upload Note'),
+                            ],
+                          ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

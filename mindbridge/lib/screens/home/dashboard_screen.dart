@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:appwrite/appwrite.dart';
 import '../../services/auth_service.dart';
+import '../../services/appwrite_service.dart';
 import '../../providers/theme_provider.dart';
+import '../../widgets/glass_background.dart';
 import '../notes/notes_screen.dart';
 import '../opportunities/opportunities_screen.dart';
 import '../profile/profile_screen.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -42,61 +47,77 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        switchInCurve: Curves.easeInOut,
-        switchOutCurve: Curves.easeInOut,
-        child: _screens[_selectedIndex],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: GlassBackground(
+        child: SafeArea(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            switchInCurve: Curves.easeInOut,
+            switchOutCurve: Curves.easeInOut,
+            child: _screens[_selectedIndex],
+          ),
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).cardTheme.color,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
+          border: Border(top: BorderSide(color: isDark ? Colors.white : Colors.black, width: 2.5)),
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: NavigationBar(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) {
-                setState(() => _selectedIndex = index);
-                _animationController.reset();
-                _animationController.forward();
-              },
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              indicatorColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-              height: 70,
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              destinations: [
-                NavigationDestination(
-                  icon: Icon(Icons.home_outlined, size: 24),
-                  selectedIcon: Icon(Icons.home, size: 24),
-                  label: 'Home',
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: isDark ? Colors.white : Colors.black, width: 2.5),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark ? Colors.white : Colors.black,
+                    offset: const Offset(4, 4),
+                  )
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12.5),
+                child: NavigationBar(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: (index) {
+                    setState(() => _selectedIndex = index);
+                    _animationController.reset();
+                    _animationController.forward();
+                  },
+                  backgroundColor: isDark ? const Color(0xFF222222) : Colors.white,
+                  elevation: 0,
+                  indicatorColor: Theme.of(context).colorScheme.secondary,
+                  height: 65,
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+                  destinations: [
+                    NavigationDestination(
+                      icon: const Icon(Icons.home_outlined),
+                      selectedIcon: Icon(Icons.home, color: isDark ? Colors.white : Colors.black),
+                      label: 'Home',
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.book_outlined),
+                      selectedIcon: Icon(Icons.book, color: isDark ? Colors.white : Colors.black),
+                      label: 'Notes',
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.work_outline),
+                      selectedIcon: Icon(Icons.work, color: isDark ? Colors.white : Colors.black),
+                      label: 'Opportunities',
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.person_outline),
+                      selectedIcon: Icon(Icons.person, color: isDark ? Colors.white : Colors.black),
+                      label: 'Profile',
+                    ),
+                  ],
                 ),
-                NavigationDestination(
-                  icon: Icon(Icons.book_outlined, size: 24),
-                  selectedIcon: Icon(Icons.book, size: 24),
-                  label: 'Notes',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.work_outline, size: 24),
-                  selectedIcon: Icon(Icons.work, size: 24),
-                  label: 'Opportunities',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.person_outline, size: 24),
-                  selectedIcon: Icon(Icons.person, size: 24),
-                  label: 'Profile',
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -116,6 +137,13 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  
+  final _auth = AuthService();
+  final _databases = AppwriteService().databases;
+  int _noteCount = 0;
+  int _oppCount = 0;
+  int _downloadCount = 0;
+  bool _isLoadingStats = true;
 
   @override
   void initState() {
@@ -130,6 +158,43 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _controller.forward();
+    _fetchStats();
+  }
+
+  Future<void> _fetchStats() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final notes = await _databases.listDocuments(
+        databaseId: AppwriteService.databaseId,
+        collectionId: AppwriteService.notesCollectionId,
+        queries: [Query.equal('uploadedBy', user.uid), Query.limit(1)],
+      );
+
+      final opps = await _databases.listDocuments(
+        databaseId: AppwriteService.databaseId,
+        collectionId: AppwriteService.opportunitiesCollectionId,
+        queries: [Query.limit(1)],
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      final userId = AuthService().currentUser?.uid ?? 'anonymous';
+      final storageKey = 'downloaded_notes_$userId';
+      final downloads = prefs.getStringList(storageKey) ?? [];
+
+      if (mounted) {
+        setState(() {
+          _noteCount = notes.total;
+          _oppCount = opps.total;
+          _downloadCount = downloads.length;
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching stats: $e');
+      if (mounted) setState(() => _isLoadingStats = false);
+    }
   }
 
   @override
@@ -140,21 +205,22 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final authService = AuthService();
-    final user = authService.currentUser;
-    final userName = user?.displayName ?? 'Student';
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // App Bar Section
+    return StreamBuilder<User?>(
+      stream: _auth.authStateChanges,
+      builder: (context, snapshot) {
+        final user = snapshot.data ?? _auth.currentUser;
+        final userName = user?.displayName ?? user?.email?.split('@')[0] ?? 'Explorer';
+
+        return Scaffold(
+          backgroundColor: Colors.transparent, 
+          body: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 child: Row(
@@ -168,7 +234,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -176,7 +242,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                           'Your Study Companion',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey[600],
+                            color: isDark ? Colors.white70 : Colors.black54,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -204,7 +270,6 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                 ),
               ),
 
-              // Welcome Card
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: SlideTransition(
@@ -215,20 +280,13 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF233169),
-                            const Color(0xFF4A5899),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
+                        color: Theme.of(context).colorScheme.secondary,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: isDark ? Colors.white : Colors.black, width: 2.5),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF233169).withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
+                            color: isDark ? Colors.white : Colors.black,
+                            offset: const Offset(6, 6),
                           ),
                         ],
                       ),
@@ -239,38 +297,36 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                             children: [
                               CircleAvatar(
                                 radius: 24,
-                                backgroundColor: Colors.white.withOpacity(0.2),
-                                backgroundImage: user?.photoURL != null
-                                    ? NetworkImage(user!.photoURL!)
-                                    : null,
-                                child: user?.photoURL == null
-                                    ? Text(
-                                        userName.substring(0, 1).toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      )
-                                    : null,
+                                backgroundColor: isDark ? Colors.white : Colors.black,
+                                backgroundImage: user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
+                                child: user?.photoURL == null 
+                                  ? Text(
+                                    userName.substring(0, 1).toUpperCase(),
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.secondary,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                  : null,
                               ),
                               const Spacer(),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: isDark ? Colors.white : Colors.black,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.verified, color: Colors.white, size: 16),
+                                    Icon(Icons.verified, color: Theme.of(context).colorScheme.secondary, size: 16),
                                     const SizedBox(width: 4),
                                     Text(
                                       'Active',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: Theme.of(context).colorScheme.secondary,
                                         fontSize: 12,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w800,
                                       ),
                                     ),
                                   ],
@@ -282,27 +338,28 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                           Text(
                             'Welcome back,',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
+                              color: isDark ? Colors.white : Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             userName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Ready to learn something new today?',
+                            'Ready for learning something new?',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.85),
-                              fontSize: 14,
+                              color: isDark ? Colors.white.withOpacity(0.9) : Colors.black.withOpacity(0.8),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -313,7 +370,6 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
               ),
               const SizedBox(height: 32),
 
-              // Quick Access Section
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -337,7 +393,6 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
               ),
               const SizedBox(height: 16),
 
-              // Quick Access Grid
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: GridView.count(
@@ -398,15 +453,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                         colors: [Color(0xFF10B981), Color(0xFF059669)],
                       ),
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Share feature coming soon!'),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        );
+                        Share.share('Check out MindBridge - Your collaborative study platform! Download now and start sharing notes.');
                       },
                     ),
                   ],
@@ -414,7 +461,6 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
               ),
               const SizedBox(height: 32),
 
-              // Stats Card
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
@@ -422,16 +468,11 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardTheme.color,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isDark
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.grey.withOpacity(0.1),
-                    ),
+                    border: Border.all(color: isDark ? Colors.white : Colors.black, width: 2.5),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: isDark ? Colors.white : Colors.black,
+                        offset: const Offset(6, 6),
                       ),
                     ],
                   ),
@@ -462,8 +503,8 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                         children: [
                           _StatItem(
                             icon: Icons.file_present_rounded,
-                            count: '0',
-                            label: 'Notes',
+                            count: _isLoadingStats ? '...' : _noteCount.toString(),
+                            label: 'My Notes',
                             color: const Color(0xFF4F7FFF),
                           ),
                           Container(
@@ -475,8 +516,8 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                           ),
                           _StatItem(
                             icon: Icons.work_rounded,
-                            count: '0',
-                            label: 'Applied',
+                            count: _isLoadingStats ? '...' : _oppCount.toString(),
+                            label: 'Available',
                             color: const Color(0xFFFF7A5C),
                           ),
                           Container(
@@ -488,7 +529,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                           ),
                           _StatItem(
                             icon: Icons.download_rounded,
-                            count: '0',
+                            count: _isLoadingStats ? '...' : _downloadCount.toString(),
                             label: 'Downloads',
                             color: const Color(0xFF10B981),
                           ),
@@ -498,11 +539,11 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -407,9 +407,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                       icon: Icons.book_rounded,
                       title: 'My Notes',
                       subtitle: 'View & upload',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF4F7FFF), Color(0xFF3D66CC)],
-                      ),
+                      color: const Color(0xFF4F7FFF),
                       onTap: () {
                         final scaffoldState = context.findAncestorStateOfType<_DashboardScreenState>();
                         scaffoldState?.setState(() {
@@ -421,9 +419,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                       icon: Icons.work_rounded,
                       title: 'Opportunities',
                       subtitle: 'Find jobs',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF7A5C), Color(0xFFE65C3B)],
-                      ),
+                      color: const Color(0xFFFF7A5C),
                       onTap: () {
                         final scaffoldState = context.findAncestorStateOfType<_DashboardScreenState>();
                         scaffoldState?.setState(() {
@@ -435,9 +431,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                       icon: Icons.person_rounded,
                       title: 'Profile',
                       subtitle: 'View profile',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFA855F7), Color(0xFF8B44D9)],
-                      ),
+                      color: const Color(0xFFA855F7),
                       onTap: () {
                         final scaffoldState = context.findAncestorStateOfType<_DashboardScreenState>();
                         scaffoldState?.setState(() {
@@ -449,9 +443,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin {
                       icon: Icons.share_rounded,
                       title: 'Share App',
                       subtitle: 'Invite friends',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF10B981), Color(0xFF059669)],
-                      ),
+                      color: const Color(0xFF10B981),
                       onTap: () {
                         Share.share('Check out MindBridge - Your collaborative study platform! Download now and start sharing notes.');
                       },
@@ -552,14 +544,14 @@ class _QuickAccessCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final Gradient gradient;
+  final Color color;
   final VoidCallback onTap;
 
   const _QuickAccessCard({
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.gradient,
+    required this.color,
     required this.onTap,
   });
 
@@ -572,6 +564,9 @@ class _QuickAccessCardState extends State<_QuickAccessCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final contentColor = isDark ? Colors.white : Colors.black;
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
@@ -582,13 +577,13 @@ class _QuickAccessCardState extends State<_QuickAccessCard> {
         duration: const Duration(milliseconds: 100),
         child: Container(
           decoration: BoxDecoration(
-            gradient: widget.gradient,
+            color: widget.color,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: contentColor, width: 2.5),
             boxShadow: [
               BoxShadow(
-                color: widget.gradient.colors.first.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
+                color: contentColor,
+                offset: const Offset(6, 6),
               ),
             ],
           ),
@@ -601,22 +596,22 @@ class _QuickAccessCardState extends State<_QuickAccessCard> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: contentColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     widget.icon,
-                    color: Colors.white,
+                    color: contentColor,
                     size: 28,
                   ),
                 ),
                 const Spacer(),
                 Text(
                   widget.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: contentColor,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -624,7 +619,7 @@ class _QuickAccessCardState extends State<_QuickAccessCard> {
                   widget.subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.9),
+                    color: contentColor.withOpacity(0.7),
                   ),
                 ),
               ],

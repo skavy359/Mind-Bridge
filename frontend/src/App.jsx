@@ -735,7 +735,7 @@ const App = () => {
               width: isMobile ? "100%" : "auto",
             }}>
               <MagneticButton>
-                <a href="https://github.com/skavy359/Mind-Bridge/releases/download/v1.0/MindBridge.apk" style={{
+                <a href="/mindbridge.apk" style={{
                   background: "linear-gradient(135deg, var(--primary), #00D1FF)",
                   backgroundSize: "200% 200%", animation: "gradientShift 3s ease infinite",
                   color: "#020202", padding: "16px 36px", borderRadius: "14px",
@@ -897,7 +897,7 @@ const App = () => {
                 Join students who stopped struggling and started studying smarter with Mind-Bridge.
               </p>
               <MagneticButton>
-                <a href="https://github.com/skavy359/Mind-Bridge/releases/download/v1.0/MindBridge.apk" target="_blank" rel="noreferrer" style={{
+                <a href="/mindbridge.apk" target="_blank" rel="noreferrer" style={{
                   background: "linear-gradient(135deg, var(--primary), #00D1FF)",
                   backgroundSize: "200% 200%", animation: "gradientShift 3s ease infinite",
                   color: "#020202", padding: "18px 44px", borderRadius: "14px",
@@ -921,7 +921,7 @@ const App = () => {
             <span>MindBridge © 2026</span>
           </div>
           <div style={{ display: "flex", gap: "30px" }}>
-            <a href="https://github.com/skavy359/Mind-Bridge/releases/download/v1.0/MindBridge.apk" target="_blank" rel="noreferrer"
+            <a href="/mindbridge.apk" target="_blank" rel="noreferrer"
               style={{ color: "rgba(255,255,255,0.2)", textDecoration: "none", display: "flex", alignItems: "center", gap: "5px" }}>
               <Github size={12} /> Kavy Sharma
             </a>
